@@ -393,18 +393,35 @@ textarea:focus{border-color:var(--border-strong)}
     <!-- MAD -->
     <div class="page" id="page-mad">
       <div class="page-header"><div class="page-title">Mad & madplan</div></div>
+      <div class="tab-row">
+        <button class="tab-pill active" onclick="madTab('mad',this)">Madplan</button>
+        <button class="tab-pill" onclick="madTab('traen',this)">Træning</button>
+      </div>
 
-      <!-- Ugentlig madplan -->
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-          <div class="card-title" style="margin-bottom:0">Ugens madplan</div>
-          <span id="sunday-badge" style="display:none" class="pill pill-amber">☀ Plandag i dag</span>
+      <div class="tab-content active" id="mad-mad">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div class="card-title" style="margin-bottom:0">Ugens madplan</div>
+            <span id="sunday-badge" style="display:none" class="pill pill-amber">☀ Plandag i dag</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Planlæg om søndagen for hele ugen ad gangen.</div>
+          <div id="madplan-grid"></div>
+          <div id="sunday-prompt" style="display:none;margin-top:.75rem;padding:.85rem 1rem;background:var(--amber-bg);border-radius:var(--radius);border:1px solid rgba(139,94,10,.15)">
+            <div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:.25rem">Det er søndag — plandag</div>
+            <div style="font-size:12px;color:var(--amber)">Udfyld madplan herover og lav din indkøbsliste på dashboard.</div>
+          </div>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Planlæg om søndagen for hele ugen ad gangen.</div>
-        <div id="madplan-grid"></div>
-        <div id="sunday-prompt" style="display:none;margin-top:.75rem;padding:.85rem 1rem;background:var(--amber-bg);border-radius:var(--radius);border:1px solid rgba(139,94,10,.15)">
-          <div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:.25rem">Det er søndag — plandag</div>
-          <div style="font-size:12px;color:var(--amber)">Udfyld madplan herover og lav din indkøbsliste på dashboard.</div>
+      </div>
+
+      <div class="tab-content" id="mad-traen">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <div class="card-title" style="margin-bottom:0">Ugens træningsplan</div>
+            <span id="sunday-traen-badge" style="display:none" class="pill pill-amber">☀ Plandag</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:.85rem">Tryk på dag-typen for at skifte mellem Træning / Gåtur / Hvile.</div>
+          <div id="traenplan-grid"></div>
+          <button id="suggest-traen-btn" onclick="suggestTraenplan()" class="add-btn" style="margin-top:.75rem">Foreslå ny ugeplan</button>
         </div>
       </div>
     </div>
@@ -737,9 +754,14 @@ function D(){
   };
   return state[TODAY];
 }
+const TRAEN_TEMPLATES=[
+  {'Man':{type:'træning',note:'Underkrop + core\n• Squat 3×12\n• Udfald 3×10 per ben\n• Glute bridge 3×15\n• Dead bug 3×8 per side\n• Planke 3×hold'},'Tir':{type:'gåtur',note:'Gåtur 30–45 min\nSigt efter 8–10.000 skridt'},'Ons':{type:'træning',note:'Overkrop + core\n• Armstræk mod bord 3×10\n• Stolen row 3×12\n• Skulder press 3×12\n• Side planke 3×20 sek\n• Superman 3×12'},'Tor':{type:'gåtur',note:'Gåtur 30–45 min'},'Fre':{type:'træning',note:'Helkrop\n• Squat 3×15\n• Armstræk mod bord 3×12\n• Glute bridge 3×15\n• Planke 3×hold\n• 10 min rolig gang bagefter'},'Lør':{type:'hvile',note:'Aktiv hvile\nStræk, dans eller rolig gåtur'},'Søn':{type:'hvile',note:'Plandag — forbered næste uge'}},
+  {'Man':{type:'hvile',note:'Aktiv hvile eller rolig gåtur'},'Tir':{type:'træning',note:'Overkrop + core\n• Armstræk mod bord 3×10\n• Stolen row 3×12\n• Skulder press 3×12\n• Side planke 3×20 sek'},'Ons':{type:'gåtur',note:'Gåtur 45 min — find en ny rute'},'Tor':{type:'træning',note:'Underkrop + core\n• Squat 3×12\n• Udfald 3×10 per ben\n• Glute bridge 3×15\n• Dead bug 3×8 per side'},'Fre':{type:'gåtur',note:'Gåtur 30 min'},'Lør':{type:'træning',note:'Helkrop\n• Squat 3×15\n• Armstræk mod bord 3×12\n• Glute bridge 3×15\n• Dans eller bevægelse 10 min'},'Søn':{type:'hvile',note:'Plandag — forbered næste uge'}},
+];
+
 function W(){
   const k=weekKey();
-  if(!state[k])state[k]={madplan:{},grocery_food_items:[],wishes:{toej:[],hjem:[],andet:[]}};
+  if(!state[k])state[k]={madplan:{},grocery_food_items:[],wishes:{toej:[],hjem:[],andet:[]},traenplan:{}};
   // Sørg for grocery altid er et array, aldrig null
   if(!state[k].grocery_food_items||!Array.isArray(state[k].grocery_food_items)){
     state[k].grocery_food_items=FOOD_GROCERY.map(n=>({name:n,done:false}));
@@ -791,7 +813,7 @@ function renderAll(){
   setDate();showQuote();renderHabits();renderSkinSteps();renderRetinolInteractive();
   renderSkinGrocery();renderFoodGrocery();renderDopa();
   renderWeekGrid();renderWeightChart();
-  renderMadplan();renderTodos();renderWeeklyReset();renderWishes();
+  renderMadplan();renderTraenplan();renderTodos();renderWeeklyReset();renderWishes();
   restoreSliders();restoreNote();
   restoreMinimums();updateScore();updateStreak();updateDashboard();
 }
@@ -1115,6 +1137,53 @@ function renderMadplan(){
     </div>`).join('');
 }
 function saveMadplan(day,meal,val){const wp=W();if(!wp.madplan[day])wp.madplan[day]={};wp.madplan[day][meal]=val;saveState()}
+
+// ─── TRÆNINGSPLAN ─────────────────────────────────────────────
+function madTab(name,btn){
+  document.querySelectorAll('#page-mad .tab-pill').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#page-mad .tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');document.getElementById('mad-'+name).classList.add('active');
+}
+function renderTraenplan(){
+  const el=document.getElementById('traenplan-grid');if(!el)return;
+  const wp=W();if(!wp.traenplan)wp.traenplan={};
+  const isSunday=new Date().getDay()===0;
+  const sb=document.getElementById('sunday-traen-badge');
+  if(sb)sb.style.display=isSunday?'inline-flex':'none';
+  const LABEL={'træning':'🏋 Træning','gåtur':'🚶 Gåtur','hvile':'○ Hvile'};
+  const COL={'træning':'var(--green)','gåtur':'var(--blue)','hvile':'var(--hint)'};
+  const BG={'træning':'var(--green-bg)','gåtur':'var(--blue-bg)','hvile':'var(--surface)'};
+  el.innerHTML=DAYS_DA.map(d=>{
+    const day=wp.traenplan[d]||{type:'hvile',note:''};
+    const t=day.type||'hvile';
+    return`<div class="madplan-day">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
+        <div class="madplan-dayname">${d}</div>
+        <button onclick="cycleTraenType('${d}')" style="font-size:11px;padding:2px 8px;border-radius:12px;border:none;background:${BG[t]};color:${COL[t]};cursor:pointer;font-weight:500">${LABEL[t]||'○ Hvile'}</button>
+      </div>
+      <textarea style="width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:.5rem .65rem;font-size:12px;font-family:'Montserrat',sans-serif;background:var(--surface);color:var(--text);resize:none;outline:none;min-height:54px;line-height:1.5;transition:border .15s" placeholder="Øvelser og noter..." onchange="saveTraenplan('${d}','note',this.value)" onfocus="this.style.borderColor='var(--border-strong)'" onblur="this.style.borderColor='var(--border)'">${escHtml(day.note)}</textarea>
+    </div>`;
+  }).join('');
+}
+function cycleTraenType(d){
+  const wp=W();if(!wp.traenplan)wp.traenplan={};
+  if(!wp.traenplan[d])wp.traenplan[d]={type:'hvile',note:''};
+  const types=['træning','gåtur','hvile'];
+  const cur=wp.traenplan[d].type||'hvile';
+  wp.traenplan[d].type=types[(types.indexOf(cur)+1)%types.length];
+  saveState();renderTraenplan();
+}
+function saveTraenplan(d,field,val){
+  const wp=W();if(!wp.traenplan)wp.traenplan={};
+  if(!wp.traenplan[d])wp.traenplan[d]={type:'hvile',note:''};
+  wp.traenplan[d][field]=val;saveState();
+}
+function suggestTraenplan(){
+  const wp=W();
+  const weekNum=Math.floor(Date.now()/6048e5);
+  wp.traenplan=JSON.parse(JSON.stringify(TRAEN_TEMPLATES[weekNum%TRAEN_TEMPLATES.length]));
+  saveState();renderTraenplan();
+}
 
 // ─── MORGENMAD REDIGER ───────────────────────────────────────
 function restoreBreakfast(){
