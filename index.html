@@ -403,13 +403,9 @@ textarea:focus{border-color:var(--border-strong)}
 
       <div class="tab-content" id="mad-traen">
         <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
-            <div class="card-title" style="margin-bottom:0">Ugens træningsplan</div>
-            <span id="sunday-traen-badge" style="display:none" class="pill pill-amber">☀ Plandag</span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:.85rem">Tryk på dag-typen for at skifte mellem Træning / Gåtur / Hvile.</div>
+          <div class="card-title">Ugens træningsplan</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:.85rem">3 træningsdage om ugen — hjemme, ingen udstyr. Hak øvelserne af efterhånden.</div>
           <div id="traenplan-grid"></div>
-          <button id="suggest-traen-btn" onclick="suggestTraenplan()" class="add-btn" style="margin-top:.75rem">Foreslå ny ugeplan</button>
         </div>
       </div>
     </div>
@@ -660,12 +656,17 @@ const SKIN_GROCERY=[
 const FOOD_GROCERY=[];
 const DAILY_KCAL=1600;
 const MEALS_DB={
-  hverdag:[
-    {name:'Havregrød med bær og skyr',kcal:380,protein:26,ing:[{i:'Havregryn',q:80,u:'g'},{i:'Skyr',q:150,u:'g'},{i:'Frosne bær',q:100,u:'g'}]},
-    {name:'Rugbrød med æg',kcal:310,protein:22,ing:[{i:'Rugbrød',q:2,u:'skiver'},{i:'Æg',q:2,u:'stk'},{i:'Agurk',q:0.5,u:'stk'}]},
-    {name:'Skyr med havregryn og banan',kcal:350,protein:22,ing:[{i:'Skyr',q:200,u:'g'},{i:'Havregryn',q:40,u:'g'},{i:'Banan',q:1,u:'stk'}]},
-    {name:'Rugbrød med tunsalat',kcal:300,protein:28,ing:[{i:'Rugbrød',q:2,u:'skiver'},{i:'Tun på dåse',q:1,u:'dåse'},{i:'Agurk',q:0.5,u:'stk'}]},
-    {name:'Havregrød med banan og peanutbutter',kcal:360,protein:14,ing:[{i:'Havregryn',q:80,u:'g'},{i:'Banan',q:1,u:'stk'},{i:'Peanutbutter',q:1,u:'spsk'}]},
+  morgenmad:[
+    {name:'Røræg med rugbrød',kcal:350,protein:24,ing:[{i:'Æg',q:3,u:'stk'},{i:'Rugbrød',q:1,u:'skive'},{i:'Smør',q:1,u:'tsk'}]},
+    {name:'Skyr med bær og nødder',kcal:290,protein:22,ing:[{i:'Skyr',q:200,u:'g'},{i:'Frosne bær',q:100,u:'g'},{i:'Blandede nødder',q:15,u:'g'}]},
+    {name:'Rugbrød med æg og agurk',kcal:320,protein:22,ing:[{i:'Rugbrød',q:2,u:'skiver'},{i:'Æg',q:2,u:'stk'},{i:'Agurk',q:0.5,u:'stk'}]},
+    {name:'Skyr med banan',kcal:260,protein:18,ing:[{i:'Skyr',q:200,u:'g'},{i:'Banan',q:1,u:'stk'}]},
+  ],
+  frokost:[
+    {name:'Rugbrød med tunsalat',kcal:310,protein:28,ing:[{i:'Rugbrød',q:2,u:'skiver'},{i:'Tun på dåse',q:1,u:'dåse'},{i:'Agurk',q:0.5,u:'stk'}]},
+    {name:'Rugbrød med æg og skyr',kcal:330,protein:26,ing:[{i:'Rugbrød',q:2,u:'skiver'},{i:'Æg',q:2,u:'stk'},{i:'Skyr',q:100,u:'g'}]},
+    {name:'Salat med kylling',kcal:350,protein:34,ing:[{i:'Kyllingefilet',q:120,u:'g'},{i:'Blandede salater',q:100,u:'g'},{i:'Cherry tomater',q:100,u:'g'},{i:'Agurk',q:0.5,u:'stk'}]},
+    {name:'Rugbrød med avocado og æg',kcal:370,protein:18,ing:[{i:'Rugbrød',q:2,u:'skiver'},{i:'Avocado',q:0.5,u:'stk'},{i:'Æg',q:1,u:'stk'}]},
   ],
   aftensmad:[
     {name:'Kylling med ris og grøntsager',kcal:560,protein:48,ing:[{i:'Kyllingefilet',q:150,u:'g'},{i:'Ris',q:80,u:'g'},{i:'Frossen grøntsagsblanding',q:150,u:'g'}]},
@@ -784,14 +785,47 @@ function D(){
     habits:{},protein:0,note:'',mood:null,anxiety:5,weight:null,
     skinAm:{},skinPm:{},retinolDone:{},grocery_skin:{},dopa:{},
     todos:{today:[],week:[],general:[]},
-    weeklyReset:{}
+    weeklyReset:{},workoutDone:{}
   };
+  if(!state[TODAY].workoutDone)state[TODAY].workoutDone={};
   return state[TODAY];
 }
-const TRAEN_TEMPLATES=[
-  {'Man':{type:'træning',note:'Underkrop + core\n• Squat 3×12\n• Udfald 3×10 per ben\n• Glute bridge 3×15\n• Dead bug 3×8 per side\n• Planke 3×hold'},'Tir':{type:'gåtur',note:'Gåtur 30–45 min\nSigt efter 8–10.000 skridt'},'Ons':{type:'træning',note:'Overkrop + core\n• Armstræk mod bord 3×10\n• Stolen row 3×12\n• Skulder press 3×12\n• Side planke 3×20 sek\n• Superman 3×12'},'Tor':{type:'gåtur',note:'Gåtur 30–45 min'},'Fre':{type:'træning',note:'Helkrop\n• Squat 3×15\n• Armstræk mod bord 3×12\n• Glute bridge 3×15\n• Planke 3×hold\n• 10 min rolig gang bagefter'},'Lør':{type:'hvile',note:'Aktiv hvile\nStræk, dans eller rolig gåtur'},'Søn':{type:'hvile',note:'Plandag — forbered næste uge'}},
-  {'Man':{type:'hvile',note:'Aktiv hvile eller rolig gåtur'},'Tir':{type:'træning',note:'Overkrop + core\n• Armstræk mod bord 3×10\n• Stolen row 3×12\n• Skulder press 3×12\n• Side planke 3×20 sek'},'Ons':{type:'gåtur',note:'Gåtur 45 min — find en ny rute'},'Tor':{type:'træning',note:'Underkrop + core\n• Squat 3×12\n• Udfald 3×10 per ben\n• Glute bridge 3×15\n• Dead bug 3×8 per side'},'Fre':{type:'gåtur',note:'Gåtur 30 min'},'Lør':{type:'træning',note:'Helkrop\n• Squat 3×15\n• Armstræk mod bord 3×12\n• Glute bridge 3×15\n• Dans eller bevægelse 10 min'},'Søn':{type:'hvile',note:'Plandag — forbered næste uge'}},
-];
+
+const WORKOUT_PLAN={
+  Man:{type:'træning',title:'Underkrop + Core',ex:[
+    {id:'w_squat',name:'Squat',sets:'3 sæt × 12 reps',desc:'Brug stolen som guide — sæt dig ned og rejs dig kontrolleret. Hold ryggen ret.'},
+    {id:'w_udfald',name:'Udfald på stedet',sets:'3 sæt × 10 per ben',desc:'Hold overkroppen oprejst, sænk det bagerste knæ mod gulvet.'},
+    {id:'w_glute',name:'Glute bridge',sets:'3 sæt × 15 reps',desc:'Lig på ryggen, fødder fladt på gulvet. Løft hoften op og klem bagdelen i top.'},
+    {id:'w_deadbug',name:'Dead bug',sets:'3 sæt × 8 per side',desc:'Lig på ryggen med arme op. Sænk modsat arm og ben mod gulvet — langsomt og kontrolleret.'},
+    {id:'w_planke1',name:'Planke',sets:'3 × hold så længe du kan',desc:'Hold kroppen ret som en bræt. Ingen hængende hofte, ingen hævet bagdel.'},
+  ]},
+  Tir:{type:'gåtur',title:'Gåtur + restitution',ex:[
+    {id:'w_gaatur1',name:'Gåtur 30–45 min',sets:'',desc:'Tag Charlie med. Sigt efter 8–10.000 skridt i dag. Roligt tempo — dette er restitution.'},
+  ]},
+  Ons:{type:'træning',title:'Overkrop + Core',ex:[
+    {id:'w_armstr',name:'Armstræk mod køkkenbord',sets:'3 sæt × 10 reps',desc:'Stå skråt mod bordet med strakte arme. Bøj albuerne og sænk brystet mod kanten.'},
+    {id:'w_row',name:'Stolen row',sets:'3 sæt × 12 reps',desc:'Hold om ryglænet, læn overkroppen frem 45°, træk stolen mod dig og klem skulderbladene.'},
+    {id:'w_press',name:'Skulder press',sets:'3 sæt × 12 reps',desc:'Brug to vanddunke eller fyldte tasker. Pres op over hovedet til armene er strakte.'},
+    {id:'w_sidepl',name:'Side planke',sets:'3 × 20 sek per side',desc:'Underarm på gulvet, kroppen i en ret linje fra hoved til fod. Brug knæet som støtte hvis nødvendigt.'},
+    {id:'w_super',name:'Superman',sets:'3 sæt × 12 reps',desc:'Lig på maven med strakte arme foran dig. Løft arme og ben fra gulvet samtidig, hold 2 sek.'},
+  ]},
+  Tor:{type:'gåtur',title:'Gåtur + restitution',ex:[
+    {id:'w_gaatur2',name:'Gåtur 30–45 min',sets:'',desc:'Aktiv hvile. Kroppen restituerer bedst når du bevæger dig let — ikke sidder stille.'},
+  ]},
+  Fre:{type:'træning',title:'Helkrop',ex:[
+    {id:'w_squat2',name:'Squat',sets:'3 sæt × 15 reps',desc:'Lidt flere reps end mandag. Gå dybt og hold et roligt tempo.'},
+    {id:'w_armstr2',name:'Armstræk mod bord',sets:'3 sæt × 12 reps',desc:'Samme som onsdag — mærk om du kan holde et strammere tempo i dag.'},
+    {id:'w_glute2',name:'Glute bridge',sets:'3 sæt × 15 reps',desc:'Hold hoften oppe i 2 sek i toppen for ekstra effekt.'},
+    {id:'w_planke2',name:'Planke',sets:'3 × hold',desc:'Prøv at slå dit rekord fra mandag.'},
+    {id:'w_gang',name:'10 min rolig gang',sets:'',desc:'Afslut altid træningen med en rolig gåtur. Det sænker pulsen og hjælper restitutionen.'},
+  ]},
+  Lør:{type:'hvile',title:'Aktiv hvile',ex:[
+    {id:'w_dans',name:'Dans, stræk eller rolig gåtur',sets:'10–20 min',desc:'Intet pres. Sæt musik på og bevæg kroppen på en måde der føles godt.'},
+  ]},
+  Søn:{type:'hvile',title:'Plandag',ex:[
+    {id:'w_plan',name:'Planlæg ugen',sets:'',desc:'Generer ny madplan, tjek træningsplanen og udfyld ugentlig reset.'},
+  ]},
+};
 
 function W(){
   const k=weekKey();
@@ -1161,36 +1195,32 @@ function fmtQ(q,u){
 
 function generateWeekMealPlan(force){
   const wp=W();
-  if(!force&&wp.weekMealPlan&&Object.keys(wp.weekMealPlan).length===7)return;
+  if(!force&&wp.weekMealPlan&&wp.weekMealPlan.morgenmad)return;
   const wn=Math.floor(Date.now()/6048e5);
-  const plan={};
+  const plan={
+    morgenmad:MEALS_DB.morgenmad[wn%MEALS_DB.morgenmad.length],
+    frokost:MEALS_DB.frokost[wn%MEALS_DB.frokost.length],
+    aftensmad:{},snack:{}
+  };
   DAYS_DA.forEach((d,i)=>{
-    plan[d]={
-      hverdag:MEALS_DB.hverdag[(wn+i)%MEALS_DB.hverdag.length],
-      aftensmad:MEALS_DB.aftensmad[i%MEALS_DB.aftensmad.length],
-      snack:MEALS_DB.snack[i%MEALS_DB.snack.length]
-    };
+    plan.aftensmad[d]=MEALS_DB.aftensmad[i%MEALS_DB.aftensmad.length];
+    plan.snack[d]=MEALS_DB.snack[i%MEALS_DB.snack.length];
   });
   wp.weekMealPlan=plan;
   wp.shoppingAutoList=buildShoppingList(plan);
-  saveState();
-  renderMealPlan();
-  renderShoppingList();
+  saveState();renderMealPlan();renderShoppingList();
 }
 
 function buildShoppingList(plan){
   const tot={};
+  const add=(ing,times)=>(ing||[]).forEach(({i,q,u})=>{
+    if(!tot[i])tot[i]={q:0,u};tot[i].q+=q*times;
+  });
+  add(plan.morgenmad?.ing,7);
+  add(plan.frokost?.ing,7);
   DAYS_DA.forEach(d=>{
-    const day=plan[d];if(!day)return;
-    (day.hverdag?.ing||[]).forEach(({i,q,u})=>{
-      if(!tot[i])tot[i]={q:0,u};tot[i].q+=q*2;
-    });
-    (day.aftensmad?.ing||[]).forEach(({i,q,u})=>{
-      if(!tot[i])tot[i]={q:0,u};tot[i].q+=q;
-    });
-    (day.snack?.ing||[]).forEach(({i,q,u})=>{
-      if(!tot[i])tot[i]={q:0,u};tot[i].q+=q;
-    });
+    add(plan.aftensmad?.[d]?.ing,1);
+    add(plan.snack?.[d]?.ing,1);
   });
   return Object.entries(tot).map(([name,{q,u}])=>({name,display:fmtQ(q,u),checked:false}));
 }
@@ -1201,46 +1231,75 @@ function renderMealPlan(){
   const isSunday=new Date().getDay()===0;
   const sb=document.getElementById('sunday-badge');
   if(sb)sb.style.display=isSunday?'inline-flex':'none';
-  if(!wp.weekMealPlan||Object.keys(wp.weekMealPlan).length<7)generateWeekMealPlan();
+  if(!wp.weekMealPlan||!wp.weekMealPlan.morgenmad)generateWeekMealPlan();
   const plan=wp.weekMealPlan;
-  el.innerHTML=DAYS_DA.map(d=>{
-    const day=plan[d]||{};
-    const hk=(day.hverdag?.kcal||0)*2,ak=day.aftensmad?.kcal||0,sk=day.snack?.kcal||0;
-    const total=hk+ak+sk;
+  const mk=plan.morgenmad?.kcal||0,fk=plan.frokost?.kcal||0;
+
+  const fixedHtml=`
+    <div style="background:var(--surface);border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:.75rem">
+      <div style="font-size:11px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">Samme hele ugen</div>
+      ${fixedRow('morgenmad',plan.morgenmad,'Morgenmad')}
+      ${fixedRow('frokost',plan.frokost,'Frokost')}
+    </div>`;
+
+  const daysHtml=DAYS_DA.map(d=>{
+    const af=plan.aftensmad?.[d],sn=plan.snack?.[d];
+    const total=mk+fk+(af?.kcal||0)+(sn?.kcal||0);
     const bar=Math.min(100,Math.round(total/DAILY_KCAL*100));
-    const barCol=bar>110?'var(--red)':bar>95?'var(--green)':'var(--amber)';
+    const barCol=bar>105?'var(--amber)':bar>85?'var(--green)':'var(--hint)';
     return`<div class="madplan-day">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div class="madplan-dayname">${d}</div>
         <span style="font-size:11px;color:var(--muted)">${total} kcal</span>
       </div>
-      <div class="prog-bar" style="margin:.35rem 0 .6rem"><div class="prog-fill" style="width:${bar}%;background:${barCol}"></div></div>
-      ${mealRow(d,'hverdag',day.hverdag,'Morgenmad & frokost',hk)}
-      ${mealRow(d,'aftensmad',day.aftensmad,'Aftensmad',ak)}
-      ${mealRow(d,'snack',day.snack,'Snack',sk)}
+      <div class="prog-bar" style="margin:.3rem 0 .5rem"><div class="prog-fill" style="width:${bar}%;background:${barCol}"></div></div>
+      ${dayMealRow(d,'aftensmad',af,'Aftensmad')}
+      ${dayMealRow(d,'snack',sn,'Snack')}
     </div>`;
   }).join('');
+
+  el.innerHTML=fixedHtml+daysHtml;
 }
 
-function mealRow(d,type,meal,label,kcal){
+function fixedRow(type,meal,label){
   if(!meal)return'';
-  return`<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:.3rem 0;border-top:1px solid var(--border)">
-    <div style="flex:1;padding-right:.5rem">
+  return`<div style="display:flex;align-items:center;justify-content:space-between;padding:.3rem 0;border-top:1px solid var(--border)">
+    <div style="flex:1">
       <div style="font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.05em">${label}</div>
       <div style="font-size:13px;margin-top:1px">${meal.name}</div>
-      <div style="font-size:11px;color:var(--hint)">${kcal} kcal · ${meal.protein*(type==='hverdag'?2:1)}g protein${type==='hverdag'?' (×2)':''}</div>
+      <div style="font-size:11px;color:var(--hint)">${meal.kcal} kcal · ${meal.protein}g protein</div>
     </div>
-    <button onclick="swapMeal('${d}','${type}')" title="Skift forslag" style="flex-shrink:0;font-size:13px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;cursor:pointer;margin-top:2px">↺</button>
+    <button onclick="swapFixedMeal('${type}')" title="Skift" style="flex-shrink:0;font-size:13px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;cursor:pointer">↺</button>
   </div>`;
 }
 
-function swapMeal(d,type){
-  const wp=W();
-  if(!wp.weekMealPlan||!wp.weekMealPlan[d])return;
+function dayMealRow(d,type,meal,label){
+  if(!meal)return'';
+  return`<div style="display:flex;align-items:center;justify-content:space-between;padding:.25rem 0;border-top:1px solid var(--border)">
+    <div style="flex:1">
+      <div style="font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.05em">${label}</div>
+      <div style="font-size:13px;margin-top:1px">${meal.name} <span style="color:var(--hint);font-size:11px">${meal.kcal} kcal</span></div>
+    </div>
+    <button onclick="swapMeal('${d}','${type}')" title="Skift" style="flex-shrink:0;font-size:13px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;cursor:pointer">↺</button>
+  </div>`;
+}
+
+function swapFixedMeal(type){
+  const wp=W();if(!wp.weekMealPlan)return;
   const opts=MEALS_DB[type];
-  const cur=wp.weekMealPlan[d][type];
+  const cur=wp.weekMealPlan[type];
   const idx=opts.findIndex(m=>m.name===cur.name);
-  wp.weekMealPlan[d][type]=opts[(idx+1)%opts.length];
+  wp.weekMealPlan[type]=opts[(idx+1)%opts.length];
+  wp.shoppingAutoList=buildShoppingList(wp.weekMealPlan);
+  saveState();renderMealPlan();renderShoppingList();
+}
+
+function swapMeal(d,type){
+  const wp=W();if(!wp.weekMealPlan)return;
+  const opts=MEALS_DB[type];
+  const cur=wp.weekMealPlan[type][d];
+  const idx=opts.findIndex(m=>m.name===cur.name);
+  wp.weekMealPlan[type][d]=opts[(idx+1)%opts.length];
   wp.shoppingAutoList=buildShoppingList(wp.weekMealPlan);
   saveState();renderMealPlan();renderShoppingList();
 }
@@ -1275,7 +1334,7 @@ function toggleAutoItem(i){
 
 function refreshShoppingList(){
   const wp=W();
-  if(wp.weekMealPlan&&Object.keys(wp.weekMealPlan).length===7){
+  if(wp.weekMealPlan&&wp.weekMealPlan.morgenmad){
     wp.shoppingAutoList=buildShoppingList(wp.weekMealPlan);
     saveState();renderShoppingList();
   }
@@ -1287,44 +1346,63 @@ function madTab(name,btn){
   document.querySelectorAll('#page-mad .tab-content').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');document.getElementById('mad-'+name).classList.add('active');
 }
+
 function renderTraenplan(){
   const el=document.getElementById('traenplan-grid');if(!el)return;
-  const wp=W();if(!wp.traenplan)wp.traenplan={};
-  const isSunday=new Date().getDay()===0;
-  const sb=document.getElementById('sunday-traen-badge');
-  if(sb)sb.style.display=isSunday?'inline-flex':'none';
-  const LABEL={'træning':'🏋 Træning','gåtur':'🚶 Gåtur','hvile':'○ Hvile'};
-  const COL={'træning':'var(--green)','gåtur':'var(--blue)','hvile':'var(--hint)'};
-  const BG={'træning':'var(--green-bg)','gåtur':'var(--blue-bg)','hvile':'var(--surface)'};
-  el.innerHTML=DAYS_DA.map(d=>{
-    const day=wp.traenplan[d]||{type:'hvile',note:''};
-    const t=day.type||'hvile';
-    return`<div class="madplan-day">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
-        <div class="madplan-dayname">${d}</div>
-        <button onclick="cycleTraenType('${d}')" style="font-size:11px;padding:2px 8px;border-radius:12px;border:none;background:${BG[t]};color:${COL[t]};cursor:pointer;font-weight:500">${LABEL[t]||'○ Hvile'}</button>
+  const todayDow=(new Date().getDay()+6)%7;
+  const todayName=DAYS_DA[todayDow];
+  const done=D().workoutDone||{};
+  const TCOL={træning:'var(--green)',gåtur:'var(--blue)',hvile:'var(--hint)'};
+  const TBG={træning:'var(--green-bg)',gåtur:'var(--blue-bg)',hvile:'var(--surface)'};
+  const TLBL={træning:'🏋 Træning',gåtur:'🚶 Gåtur',hvile:'○ Hvile'};
+
+  el.innerHTML=DAYS_DA.map((d,i)=>{
+    const plan=WORKOUT_PLAN[d];
+    const isToday=i===todayDow;
+    const isPast=i<todayDow;
+    const doneCnt=plan.ex.filter(e=>done[e.id]).length;
+    const col=TCOL[plan.type]||'var(--hint)';
+    const bg=TBG[plan.type]||'var(--surface)';
+    const lbl=TLBL[plan.type]||'○ Hvile';
+
+    if(isToday){
+      return`<div style="background:var(--card);border:2px solid var(--blue);border-radius:var(--radius-lg);margin-bottom:.6rem">
+        <div style="padding:.85rem 1rem .6rem">
+          <div style="font-size:10px;color:var(--blue);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:3px">I dag</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:15px;font-weight:500">${d} — ${plan.title}</div>
+            <div style="display:flex;align-items:center;gap:.4rem">
+              <span style="font-size:11px;color:var(--muted)">${doneCnt}/${plan.ex.length}</span>
+              <span style="font-size:11px;padding:2px 8px;border-radius:12px;background:${bg};color:${col};font-weight:500">${lbl}</span>
+            </div>
+          </div>
+          <div class="prog-bar" style="margin:.5rem 0 .75rem"><div class="prog-fill" style="width:${Math.round(doneCnt/plan.ex.length*100)}%"></div></div>
+        </div>
+        <div style="padding:0 1rem .85rem">
+          ${plan.ex.map(e=>`
+            <div class="skin-step" style="cursor:pointer" onclick="toggleExercise('${e.id}')">
+              <div class="step-num ${done[e.id]?'done':''}" style="${done[e.id]?'background:var(--green);border-color:var(--green);color:#fff':''}">${done[e.id]?'✓':'•'}</div>
+              <div class="step-info">
+                <div class="step-name">${e.name}${e.sets?`<span style="font-size:11px;color:var(--hint);font-weight:400;margin-left:.5rem">${e.sets}</span>`:''}</div>
+                ${e.desc?`<div class="step-product">${e.desc}</div>`:''}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }
+    return`<div style="background:${isToday?'var(--card)':'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);padding:.6rem 1rem;margin-bottom:.35rem;display:flex;align-items:center;justify-content:space-between;opacity:${isPast?'.55':'1'}">
+      <div>
+        <span style="font-size:13px;font-weight:500">${d}</span>
+        <span style="font-size:12px;color:var(--muted);margin-left:.4rem">${plan.title}</span>
       </div>
-      <textarea style="width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:.5rem .65rem;font-size:12px;font-family:'Montserrat',sans-serif;background:var(--surface);color:var(--text);resize:none;outline:none;min-height:54px;line-height:1.5;transition:border .15s" placeholder="Øvelser og noter..." onchange="saveTraenplan('${d}','note',this.value)" onfocus="this.style.borderColor='var(--border-strong)'" onblur="this.style.borderColor='var(--border)'">${escHtml(day.note)}</textarea>
+      <span style="font-size:11px;padding:2px 8px;border-radius:12px;background:${bg};color:${col};font-weight:500">${lbl}</span>
     </div>`;
   }).join('');
 }
-function cycleTraenType(d){
-  const wp=W();if(!wp.traenplan)wp.traenplan={};
-  if(!wp.traenplan[d])wp.traenplan[d]={type:'hvile',note:''};
-  const types=['træning','gåtur','hvile'];
-  const cur=wp.traenplan[d].type||'hvile';
-  wp.traenplan[d].type=types[(types.indexOf(cur)+1)%types.length];
-  saveState();renderTraenplan();
-}
-function saveTraenplan(d,field,val){
-  const wp=W();if(!wp.traenplan)wp.traenplan={};
-  if(!wp.traenplan[d])wp.traenplan[d]={type:'hvile',note:''};
-  wp.traenplan[d][field]=val;saveState();
-}
-function suggestTraenplan(){
-  const wp=W();
-  const weekNum=Math.floor(Date.now()/6048e5);
-  wp.traenplan=JSON.parse(JSON.stringify(TRAEN_TEMPLATES[weekNum%TRAEN_TEMPLATES.length]));
+
+function toggleExercise(id){
+  if(!D().workoutDone)D().workoutDone={};
+  D().workoutDone[id]=!D().workoutDone[id];
   saveState();renderTraenplan();
 }
 
