@@ -203,9 +203,10 @@ textarea:focus{border-color:var(--border-strong)}
       <button class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">◎</span> Dashboard</button>
       <button class="nav-item" onclick="nav('habits',this)"><span class="nav-icon">✦</span> Vaner</button>
       <button class="nav-item" onclick="nav('skincare',this)"><span class="nav-icon">✿</span> Skincare</button>
-      <button class="nav-item" onclick="nav('mad',this)"><span class="nav-icon">◈</span> Mad & madplan</button>
+      <button class="nav-item" onclick="nav('mad',this)"><span class="nav-icon">◈</span> Mad & træningsplan</button>
       <button class="nav-item" onclick="nav('mood',this)"><span class="nav-icon">◇</span> Humør</button>
       <div class="nav-section">Planlægning</div>
+      <button class="nav-item" onclick="nav('indkoeb',this)"><span class="nav-icon">◻</span> Indkøbsliste</button>
       <button class="nav-item" onclick="nav('todo',this)"><span class="nav-icon">▣</span> To-do lister</button>
       <button class="nav-item" onclick="nav('oensker',this)"><span class="nav-icon">✧</span> Ønskeliste</button>
     </div>
@@ -296,16 +297,6 @@ textarea:focus{border-color:var(--border-strong)}
         <div class="habit-row"><div class="habit-left"><div class="habit-name">2 × gåtur med Charlie</div></div><button onclick="toggleMin('min-charlie',this)" class="pill pill-amber" id="min-charlie">Ikke endnu</button></div>
         <div class="habit-row"><div class="habit-left"><div class="habit-name">Rede sengen</div></div><button onclick="toggleMin('min-bed',this)" class="pill pill-amber" id="min-bed">Ikke endnu</button></div>
         <div class="habit-row"><div class="habit-left"><div class="habit-name">Høj musik og bevægelse</div></div><button onclick="toggleMin('min-music',this)" class="pill pill-amber" id="min-music">Ikke endnu</button></div>
-      </div>
-
-      <!-- Indkøbsliste -->
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
-          <div class="card-title" style="margin-bottom:0">Indkøbsliste</div>
-          <button class="pill pill-amber" onclick="clearCheckedGrocery()">Ryd afkrydsede</button>
-        </div>
-        <div class="grocery-grid" id="food-grocery"></div>
-        <button class="add-btn" onclick="addGrocery()">+ Tilføj vare</button>
       </div>
 
       <div class="card">
@@ -400,16 +391,13 @@ textarea:focus{border-color:var(--border-strong)}
 
       <div class="tab-content active" id="mad-mad">
         <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-            <div class="card-title" style="margin-bottom:0">Ugens madplan</div>
-            <span id="sunday-badge" style="display:none" class="pill pill-amber">☀ Plandag i dag</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <div class="card-title" style="margin-bottom:0">Ugens madplan — 1600 kcal/dag</div>
+            <span id="sunday-badge" style="display:none" class="pill pill-amber">☀ Plandag</span>
           </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Planlæg om søndagen for hele ugen ad gangen.</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:.85rem">Morgenmad og frokost er det samme. Tryk ↺ for at skifte et forslag.</div>
           <div id="madplan-grid"></div>
-          <div id="sunday-prompt" style="display:none;margin-top:.75rem;padding:.85rem 1rem;background:var(--amber-bg);border-radius:var(--radius);border:1px solid rgba(139,94,10,.15)">
-            <div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:.25rem">Det er søndag — plandag</div>
-            <div style="font-size:12px;color:var(--amber)">Udfyld madplan herover og lav din indkøbsliste på dashboard.</div>
-          </div>
+          <button onclick="generateWeekMealPlan(true)" class="add-btn" style="margin-top:.75rem">Generer ny ugeplan</button>
         </div>
       </div>
 
@@ -523,6 +511,27 @@ textarea:focus{border-color:var(--border-strong)}
           <div id="wish-list-andet"></div>
           <button class="add-btn" onclick="addWish('andet')">+ Tilføj ønske</button>
         </div>
+      </div>
+    </div>
+
+    <!-- INDKØBSLISTE -->
+    <div class="page" id="page-indkoeb">
+      <div class="page-header"><div class="page-title">Indkøbsliste</div></div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+          <div class="card-title" style="margin-bottom:0">Fra madplanen</div>
+          <button class="pill pill-green" onclick="refreshShoppingList()">Opdater fra madplan</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:.85rem">Genereret automatisk ud fra ugens madplan.</div>
+        <div id="shopping-auto-list"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="card-title" style="margin-bottom:0">Ekstra varer</div>
+          <button class="pill pill-amber" onclick="clearCheckedGrocery()">Ryd afkrydsede</button>
+        </div>
+        <div class="grocery-grid" id="food-grocery"></div>
+        <button class="add-btn" onclick="addGrocery()">+ Tilføj ekstra vare</button>
       </div>
     </div>
 
@@ -648,7 +657,32 @@ const SKIN_GROCERY=[
   {name:'The Ordinary Glycolic Acid 7%',cat:'Har'},
   {name:'The Ordinary Azelaic Acid 10%',cat:'Mangler — anbefalet mod rødme'},
 ];
-const FOOD_GROCERY=['Kyllingefilet','Laks (frossen ok)','Æg (12 stk)','Skyr (lactosefri)','Havregryn','Quinoa','Søde kartofler','Spinat','Agurk','Cherry tomater','Bær (frosne)','Peanutbutter','Riskagebede','Avocado','Citron','Hvidløg','Kokosmælk','Linser'];
+const FOOD_GROCERY=[];
+const DAILY_KCAL=1600;
+const MEALS_DB={
+  hverdag:[
+    {name:'Havregrød med bær og skyr',kcal:380,protein:26,ing:[{i:'Havregryn',q:80,u:'g'},{i:'Skyr',q:150,u:'g'},{i:'Frosne bær',q:100,u:'g'}]},
+    {name:'Rugbrød med æg',kcal:310,protein:22,ing:[{i:'Rugbrød',q:2,u:'skiver'},{i:'Æg',q:2,u:'stk'},{i:'Agurk',q:0.5,u:'stk'}]},
+    {name:'Skyr med havregryn og banan',kcal:350,protein:22,ing:[{i:'Skyr',q:200,u:'g'},{i:'Havregryn',q:40,u:'g'},{i:'Banan',q:1,u:'stk'}]},
+    {name:'Rugbrød med tunsalat',kcal:300,protein:28,ing:[{i:'Rugbrød',q:2,u:'skiver'},{i:'Tun på dåse',q:1,u:'dåse'},{i:'Agurk',q:0.5,u:'stk'}]},
+    {name:'Havregrød med banan og peanutbutter',kcal:360,protein:14,ing:[{i:'Havregryn',q:80,u:'g'},{i:'Banan',q:1,u:'stk'},{i:'Peanutbutter',q:1,u:'spsk'}]},
+  ],
+  aftensmad:[
+    {name:'Kylling med ris og grøntsager',kcal:560,protein:48,ing:[{i:'Kyllingefilet',q:150,u:'g'},{i:'Ris',q:80,u:'g'},{i:'Frossen grøntsagsblanding',q:150,u:'g'}]},
+    {name:'Hakket oksekød med kartofler',kcal:570,protein:38,ing:[{i:'Hakket oksekød',q:150,u:'g'},{i:'Kartofler',q:200,u:'g'},{i:'Løg',q:1,u:'stk'},{i:'Dåsetomater',q:0.5,u:'dåse'}]},
+    {name:'Laks med søde kartofler',kcal:570,protein:36,ing:[{i:'Laks',q:150,u:'g'},{i:'Søde kartofler',q:200,u:'g'},{i:'Citron',q:0.5,u:'stk'}]},
+    {name:'Pasta med kødsovs',kcal:570,protein:36,ing:[{i:'Pasta',q:80,u:'g'},{i:'Hakket oksekød',q:120,u:'g'},{i:'Dåsetomater',q:1,u:'dåse'},{i:'Løg',q:1,u:'stk'}]},
+    {name:'Æg med kartofler og spinat',kcal:430,protein:26,ing:[{i:'Æg',q:3,u:'stk'},{i:'Kartofler',q:200,u:'g'},{i:'Frossen spinat',q:100,u:'g'}]},
+    {name:'Kyllingesuppe med grøntsager',kcal:460,protein:42,ing:[{i:'Kyllingefilet',q:150,u:'g'},{i:'Gulerødder',q:2,u:'stk'},{i:'Kartofler',q:150,u:'g'},{i:'Bouillonterning',q:1,u:'stk'}]},
+    {name:'Røde linser med ris',kcal:490,protein:22,ing:[{i:'Røde linser',q:100,u:'g'},{i:'Ris',q:60,u:'g'},{i:'Løg',q:1,u:'stk'},{i:'Dåsetomater',q:0.5,u:'dåse'}]},
+  ],
+  snack:[
+    {name:'Hårdkogte æg',kcal:140,protein:12,ing:[{i:'Æg',q:2,u:'stk'}]},
+    {name:'Skyr',kcal:105,protein:15,ing:[{i:'Skyr',q:150,u:'g'}]},
+    {name:'Banan med peanutbutter',kcal:195,protein:7,ing:[{i:'Banan',q:1,u:'stk'},{i:'Peanutbutter',q:1,u:'spsk'}]},
+    {name:'Æble med nødder',kcal:175,protein:4,ing:[{i:'Æble',q:1,u:'stk'},{i:'Blandede nødder',q:20,u:'g'}]},
+  ]
+};
 const DOPAMINE=['Musik høj volumen','Gå tur med Charlie','Ring til en veninde','Løbetur','Danse i stuen','Podcast + rengøring','Langt bad','Tegne eller skrive'];
 const DAYS_DA=['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
 const MSGS=['Start med gåturen — det er nok.','Godt i gang. Bliv ved.','Du er på rette vej.','Flot dag — brug det momentum.','Stjernedag. Seriøst.'];
@@ -761,7 +795,7 @@ const TRAEN_TEMPLATES=[
 
 function W(){
   const k=weekKey();
-  if(!state[k])state[k]={madplan:{},grocery_food_items:[],wishes:{toej:[],hjem:[],andet:[]},traenplan:{}};
+  if(!state[k])state[k]={madplan:{},grocery_food_items:[],wishes:{toej:[],hjem:[],andet:[]},traenplan:{},weekMealPlan:{},shoppingAutoList:[]};
   // Sørg for grocery altid er et array, aldrig null
   if(!state[k].grocery_food_items||!Array.isArray(state[k].grocery_food_items)){
     state[k].grocery_food_items=FOOD_GROCERY.map(n=>({name:n,done:false}));
@@ -813,7 +847,7 @@ function renderAll(){
   setDate();showQuote();renderHabits();renderSkinSteps();renderRetinolInteractive();
   renderSkinGrocery();renderFoodGrocery();renderDopa();
   renderWeekGrid();renderWeightChart();
-  renderMadplan();renderTraenplan();renderTodos();renderWeeklyReset();renderWishes();
+  renderMealPlan();renderTraenplan();renderShoppingList();renderTodos();renderWeeklyReset();renderWishes();
   restoreSliders();restoreNote();
   restoreMinimums();updateScore();updateStreak();updateDashboard();
 }
@@ -1118,25 +1152,134 @@ function clearCheckedGrocery(){
 }
 
 // ─── MADPLAN ─────────────────────────────────────────────────
-function renderMadplan(){
+function fmtQ(q,u){
+  if(u==='g'&&q>=1000)return(q/1000).toFixed(1).replace('.0','')+'kg';
+  if(q===0.5)return'½ '+u;
+  if(q%1===0.5)return Math.floor(q)+'½ '+u;
+  return Math.ceil(q)+' '+u;
+}
+
+function generateWeekMealPlan(force){
+  const wp=W();
+  if(!force&&wp.weekMealPlan&&Object.keys(wp.weekMealPlan).length===7)return;
+  const wn=Math.floor(Date.now()/6048e5);
+  const plan={};
+  DAYS_DA.forEach((d,i)=>{
+    plan[d]={
+      hverdag:MEALS_DB.hverdag[(wn+i)%MEALS_DB.hverdag.length],
+      aftensmad:MEALS_DB.aftensmad[i%MEALS_DB.aftensmad.length],
+      snack:MEALS_DB.snack[i%MEALS_DB.snack.length]
+    };
+  });
+  wp.weekMealPlan=plan;
+  wp.shoppingAutoList=buildShoppingList(plan);
+  saveState();
+  renderMealPlan();
+  renderShoppingList();
+}
+
+function buildShoppingList(plan){
+  const tot={};
+  DAYS_DA.forEach(d=>{
+    const day=plan[d];if(!day)return;
+    (day.hverdag?.ing||[]).forEach(({i,q,u})=>{
+      if(!tot[i])tot[i]={q:0,u};tot[i].q+=q*2;
+    });
+    (day.aftensmad?.ing||[]).forEach(({i,q,u})=>{
+      if(!tot[i])tot[i]={q:0,u};tot[i].q+=q;
+    });
+    (day.snack?.ing||[]).forEach(({i,q,u})=>{
+      if(!tot[i])tot[i]={q:0,u};tot[i].q+=q;
+    });
+  });
+  return Object.entries(tot).map(([name,{q,u}])=>({name,display:fmtQ(q,u),checked:false}));
+}
+
+function renderMealPlan(){
   const el=document.getElementById('madplan-grid');if(!el)return;
-  const wp=W(),isSunday=new Date().getDay()===0;
-  const sb=document.getElementById('sunday-badge'),sp=document.getElementById('sunday-prompt');
+  const wp=W();
+  const isSunday=new Date().getDay()===0;
+  const sb=document.getElementById('sunday-badge');
   if(sb)sb.style.display=isSunday?'inline-flex':'none';
-  if(sp)sp.style.display=isSunday?'block':'none';
-  el.innerHTML=DAYS_DA.map(d=>`
-    <div class="madplan-day">
-      <div class="madplan-dayname">${d}</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem">
-        ${['Morgenmad','Frokost','Aftensmad','Snack'].map(m=>`
-          <div>
-            <div class="madplan-label">${m}</div>
-            <input class="madplan-input" placeholder="—" value="${escHtml((wp.madplan[d]||{})[m]||'')}" onchange="saveMadplan('${d}','${m}',this.value)">
-          </div>`).join('')}
+  if(!wp.weekMealPlan||Object.keys(wp.weekMealPlan).length<7)generateWeekMealPlan();
+  const plan=wp.weekMealPlan;
+  el.innerHTML=DAYS_DA.map(d=>{
+    const day=plan[d]||{};
+    const hk=(day.hverdag?.kcal||0)*2,ak=day.aftensmad?.kcal||0,sk=day.snack?.kcal||0;
+    const total=hk+ak+sk;
+    const bar=Math.min(100,Math.round(total/DAILY_KCAL*100));
+    const barCol=bar>110?'var(--red)':bar>95?'var(--green)':'var(--amber)';
+    return`<div class="madplan-day">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="madplan-dayname">${d}</div>
+        <span style="font-size:11px;color:var(--muted)">${total} kcal</span>
       </div>
+      <div class="prog-bar" style="margin:.35rem 0 .6rem"><div class="prog-fill" style="width:${bar}%;background:${barCol}"></div></div>
+      ${mealRow(d,'hverdag',day.hverdag,'Morgenmad & frokost',hk)}
+      ${mealRow(d,'aftensmad',day.aftensmad,'Aftensmad',ak)}
+      ${mealRow(d,'snack',day.snack,'Snack',sk)}
+    </div>`;
+  }).join('');
+}
+
+function mealRow(d,type,meal,label,kcal){
+  if(!meal)return'';
+  return`<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:.3rem 0;border-top:1px solid var(--border)">
+    <div style="flex:1;padding-right:.5rem">
+      <div style="font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.05em">${label}</div>
+      <div style="font-size:13px;margin-top:1px">${meal.name}</div>
+      <div style="font-size:11px;color:var(--hint)">${kcal} kcal · ${meal.protein*(type==='hverdag'?2:1)}g protein${type==='hverdag'?' (×2)':''}</div>
+    </div>
+    <button onclick="swapMeal('${d}','${type}')" title="Skift forslag" style="flex-shrink:0;font-size:13px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;cursor:pointer;margin-top:2px">↺</button>
+  </div>`;
+}
+
+function swapMeal(d,type){
+  const wp=W();
+  if(!wp.weekMealPlan||!wp.weekMealPlan[d])return;
+  const opts=MEALS_DB[type];
+  const cur=wp.weekMealPlan[d][type];
+  const idx=opts.findIndex(m=>m.name===cur.name);
+  wp.weekMealPlan[d][type]=opts[(idx+1)%opts.length];
+  wp.shoppingAutoList=buildShoppingList(wp.weekMealPlan);
+  saveState();renderMealPlan();renderShoppingList();
+}
+
+// ─── INDKØBSLISTE ─────────────────────────────────────────────
+function renderShoppingList(){
+  const el=document.getElementById('shopping-auto-list');if(!el)return;
+  const wp=W();
+  if(!wp.shoppingAutoList||wp.shoppingAutoList.length===0){
+    if(wp.weekMealPlan&&Object.keys(wp.weekMealPlan).length===7){
+      wp.shoppingAutoList=buildShoppingList(wp.weekMealPlan);
+    }
+  }
+  const list=wp.shoppingAutoList||[];
+  if(list.length===0){
+    el.innerHTML='<div style="font-size:13px;color:var(--hint);padding:.5rem 0">Generer en madplan for at se indkøbslisten.</div>';
+    return;
+  }
+  el.innerHTML=list.map((item,i)=>`
+    <div class="grocery-row">
+      <button class="grocery-item${item.checked?' checked':''}" onclick="toggleAutoItem(${i})">
+        <span class="gi-dot">${item.checked?'●':'○'}</span>${escHtml(item.name)} <span style="color:var(--hint);font-size:11px">${item.display}</span>
+      </button>
     </div>`).join('');
 }
-function saveMadplan(day,meal,val){const wp=W();if(!wp.madplan[day])wp.madplan[day]={};wp.madplan[day][meal]=val;saveState()}
+
+function toggleAutoItem(i){
+  const wp=W();if(!wp.shoppingAutoList)return;
+  wp.shoppingAutoList[i].checked=!wp.shoppingAutoList[i].checked;
+  saveState();renderShoppingList();
+}
+
+function refreshShoppingList(){
+  const wp=W();
+  if(wp.weekMealPlan&&Object.keys(wp.weekMealPlan).length===7){
+    wp.shoppingAutoList=buildShoppingList(wp.weekMealPlan);
+    saveState();renderShoppingList();
+  }
+}
 
 // ─── TRÆNINGSPLAN ─────────────────────────────────────────────
 function madTab(name,btn){
