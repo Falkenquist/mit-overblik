@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mit Overblik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#FAFAF7;--surface:#F2F0EA;--card:#FFFFFF;
+  --text:#1C1B18;--muted:#7A7870;--hint:#B0AEA6;
+  --green:#2D6A4F;--green-bg:#EAF4EE;--green-light:#D6EDE1;
+  --amber:#8B5E0A;--amber-bg:#FDF3E3;
+  --blue:#1A4F8A;--blue-bg:#E8F0FA;
+  --red:#8B2020;--red-bg:#FAEAEA;
+  --purple:#4A3080;--purple-bg:#EEE8FA;
+  --pink:#8B2060;--pink-bg:#FAEAF2;
+  --border:rgba(28,27,24,0.10);--border-strong:rgba(28,27,24,0.18);
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 1rem;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.main{padding:2rem;max-width:900px}
+.logo{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--text);margin-bottom:.15rem}
+.logo-sub{font-size:12px;color:var(--muted);margin-bottom:1.5rem}
+.nav-section{font-size:11px;color:var(--hint);letter-spacing:.08em;text-transform:uppercase;font-weight:500;margin:1rem 0 .4rem;padding:0 .5rem}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.45rem .75rem;border-radius:8px;cursor:pointer;font-size:14px;color:var(--muted);transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.nav-item:hover{background:var(--card);color:var(--text)}
+.nav-item.active{background:var(--card);color:var(--text);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.mode-select{margin-top:auto;padding-top:1.25rem;border-top:1px solid var(--border)}
+.mode-label{font-size:11px;color:var(--hint);letter-spacing:.08em;text-transform:uppercase;font-weight:500;margin-bottom:.5rem}
+.mode-btn{display:block;width:100%;padding:.4rem .75rem;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;border:1px solid transparent;background:none;text-align:left;margin-bottom:3px;font-family:'DM Sans',sans-serif}
+.mode-btn:hover{background:var(--card)}
+.mode-btn.m-god.active{background:var(--green-bg);color:var(--green);border-color:rgba(45,106,79,.2)}
+.mode-btn.m-ok.active{background:var(--amber-bg);color:var(--amber);border-color:rgba(139,94,10,.2)}
+.mode-btn.m-daarlig.active{background:var(--red-bg);color:var(--red);border-color:rgba(139,32,32,.2)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1rem}
+.card-title{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;color:var(--hint);margin-bottom:1rem}
+.page-header{margin-bottom:1.5rem}
+.page-title{font-family:'DM Serif Display',serif;font-size:1.75rem;color:var(--text);margin-bottom:.2rem}
+.page-date{font-size:13px;color:var(--muted)}
+.page{display:none}.page.active{display:block}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:1rem}
+.metric{background:var(--surface);border-radius:var(--radius);padding:.85rem}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:.2rem}
+.metric-val{font-size:1.4rem;font-weight:500;font-family:'DM Serif Display',serif}
+.score-wrap{display:flex;align-items:center;gap:1.5rem;margin-bottom:1.25rem}
+.score-ring{position:relative;width:70px;height:70px;flex-shrink:0}
+.score-ring svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--surface);stroke-width:5}
+.ring-fg{fill:none;stroke:var(--green);stroke-width:5;stroke-linecap:round;stroke-dasharray:188;stroke-dashoffset:188;transition:stroke-dashoffset .5s ease}
+.score-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-num{font-size:1.1rem;font-weight:500;line-height:1}
+.score-sub{font-size:9px;color:var(--muted)}
+.score-msg{font-size:14px;color:var(--muted)}
+.score-title{font-size:1rem;font-weight:500;margin-bottom:.25rem}
+.habit-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--border)}
+.habit-row:last-child{border:none}
+.habit-left{flex:1;padding-right:.75rem}
+.habit-name{font-size:14px;font-weight:500}
+.habit-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.habit-pts{font-size:11px;color:var(--hint);margin-top:2px}
+.habit-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.check-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border-strong);background:none;cursor:pointer;font-size:14px;transition:all .15s;display:flex;align-items:center;justify-content:center;color:var(--hint);font-family:'DM Sans',sans-serif}
+.check-btn:hover{border-color:var(--green);color:var(--green)}
+.check-btn.done{background:var(--green);border-color:var(--green);color:#fff}
+.check-btn.skip{background:var(--surface);border-color:var(--border)}
+.min-badge{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--green-bg);color:var(--green);font-weight:500;margin-left:6px;vertical-align:middle}
+.pill{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:'DM Sans',sans-serif}
+.pill-amber{background:var(--amber-bg);color:var(--amber)}
+.pill-green{background:var(--green-bg);color:var(--green)}
+.pill-blue{background:var(--blue-bg);color:var(--blue)}
+.pill-red{background:var(--red-bg);color:var(--red)}
+.pill-purple{background:var(--purple-bg);color:var(--purple)}
+.pill-pink{background:var(--pink-bg);color:var(--pink)}
+input[type=range]{width:100%;height:4px;accent-color:var(--green);cursor:pointer;margin:8px 0}
+.range-row{display:flex;align-items:center;gap:.75rem}
+.range-val{font-size:14px;font-weight:500;min-width:52px;text-align:right}
+textarea{width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:.75rem;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);resize:none;outline:none;min-height:70px;transition:border .15s;line-height:1.5}
+textarea:focus{border-color:var(--border-strong)}
+.add-btn{width:100%;padding:.6rem;border-radius:var(--radius);border:1px dashed var(--border-strong);background:none;cursor:pointer;font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s;margin-top:.75rem;display:block}
+.add-btn:hover{background:var(--surface);color:var(--text)}
+.mood-btn{flex:1;padding:.5rem;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:1.4rem;text-align:center;transition:all .15s}
+.mood-btn:hover{transform:scale(1.05)}
+.mood-btn.active{transform:scale(1.08);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.4rem;margin-bottom:.75rem}
+.day-cell{padding:.5rem .25rem;text-align:center;border-radius:var(--radius);border:1px solid var(--border);cursor:pointer}
+.day-cell.today{border-color:var(--blue);background:var(--blue-bg)}
+.day-cell.good{background:var(--green-light);border-color:rgba(45,106,79,.3)}
+.day-cell.ok{background:var(--amber-bg);border-color:rgba(139,94,10,.2)}
+.day-cell.tough{background:var(--red-bg);border-color:rgba(139,32,32,.2)}
+.day-name{font-size:10px;color:var(--muted);margin-bottom:3px}
+.day-score{font-size:13px;font-weight:500}
+.prog-bar{height:5px;background:var(--surface);border-radius:3px;overflow:hidden;margin-top:.5rem}
+.prog-fill{height:100%;border-radius:3px;transition:width .4s;background:var(--green)}
+.grocery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.2rem}
+.grocery-row{display:flex;align-items:center;gap:2px}
+.grocery-item{font-size:13px;padding:.35rem .5rem;border-radius:6px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:.4rem;color:var(--text);border:none;background:none;text-align:left;font-family:'DM Sans',sans-serif;flex:1;min-width:0}
+.grocery-item:hover{background:var(--surface)}
+.grocery-item.checked{color:var(--hint);text-decoration:line-through}
+.grocery-item .gi-dot{font-size:10px;color:var(--hint);flex-shrink:0}
+.grocery-item.checked .gi-dot{color:var(--green)}
+.grocery-del{font-size:11px;color:var(--hint);background:none;border:none;cursor:pointer;padding:2px 5px;opacity:0;transition:opacity .15s;font-family:'DM Sans',sans-serif;flex-shrink:0;border-radius:4px}
+.grocery-del:hover{color:var(--red);background:var(--red-bg)}
+.grocery-row:hover .grocery-del{opacity:1}
+.dopa-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem}
+.dopa-item{padding:.65rem .85rem;background:var(--surface);border-radius:var(--radius);font-size:13px;cursor:pointer;transition:all .15s;border:1px solid transparent;text-align:left;font-family:'DM Sans',sans-serif}
+.dopa-item:hover{border-color:var(--border-strong);background:var(--card)}
+.dopa-item.used{border-color:rgba(45,106,79,.3);background:var(--green-bg);color:var(--green)}
+.skin-step{display:flex;align-items:flex-start;gap:.75rem;padding:.65rem 0;border-bottom:1px solid var(--border)}
+.skin-step:last-child{border:none}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--muted);flex-shrink:0;margin-top:2px;cursor:pointer;transition:all .15s}
+.step-num.done{background:var(--pink);border-color:var(--pink);color:#fff}
+.step-info{flex:1}
+.step-name{font-size:14px;font-weight:500}
+.step-product{font-size:12px;color:var(--muted);margin-top:1px}
+.step-note{font-size:11px;color:var(--hint);margin-top:2px;font-style:italic}
+.phase-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500;margin-bottom:.75rem}
+.phase1{background:var(--green-bg);color:var(--green)}
+.phase2{background:var(--pink-bg);color:var(--pink)}
+.tab-row{display:flex;gap:.4rem;margin-bottom:1rem;flex-wrap:wrap}
+.tab-pill{padding:.35rem .85rem;border-radius:20px;border:1px solid var(--border);background:none;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;font-family:'DM Sans',sans-serif}
+.tab-pill.active{background:var(--pink-bg);color:var(--pink);border-color:rgba(139,32,96,.2)}
+.tab-content{display:none}.tab-content.active{display:block}
+.todo-item{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid var(--border)}
+.todo-item:last-child{border:none}
+.todo-cb{width:18px;height:18px;border-radius:4px;border:1px solid var(--border-strong);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .15s;font-family:'DM Sans',sans-serif}
+.todo-cb.done{background:var(--green);border-color:var(--green);color:#fff}
+.todo-text{flex:1;font-size:14px;outline:none;border:none;background:transparent;font-family:'DM Sans',sans-serif;color:var(--text);min-width:0}
+.todo-text.done-text{text-decoration:line-through;color:var(--hint)}
+.todo-del{font-size:12px;color:var(--hint);background:none;border:none;cursor:pointer;padding:0 4px;opacity:0;transition:opacity .15s;font-family:'DM Sans',sans-serif}
+.todo-item:hover .todo-del{opacity:1}
+.madplan-day{background:var(--surface);border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:.5rem}
+.madplan-dayname{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.4rem}
+.madplan-label{font-size:10px;color:var(--hint);margin-bottom:2px}
+.madplan-input{width:100%;border:none;background:transparent;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;padding:2px 0;border-bottom:1px solid transparent;transition:border .15s}
+.madplan-input:focus{border-bottom-color:var(--border-strong)}
+.madplan-input::placeholder{color:var(--hint)}
+/* Ønske liste */
+.wish-item{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.wish-item:last-child{border:none}
+.wish-emoji{font-size:1.1rem;flex-shrink:0;width:24px;text-align:center}
+.wish-info{flex:1;min-width:0}
+.wish-name{font-size:14px;font-weight:500;margin-bottom:2px}
+.wish-note{font-size:12px;color:var(--muted)}
+.wish-price{font-size:12px;color:var(--green);font-weight:500}
+.wish-del{font-size:12px;color:var(--hint);background:none;border:none;cursor:pointer;padding:4px;opacity:0;transition:opacity .15s;font-family:'DM Sans',sans-serif;flex-shrink:0}
+.wish-item:hover .wish-del{opacity:1}
+/* Kalori tracker */
+.cal-meal{background:var(--surface);border-radius:var(--radius);margin-bottom:.5rem;overflow:hidden}
+.cal-meal-header{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;cursor:pointer}
+.cal-meal-title{font-size:13px;font-weight:500}
+.cal-meal-kcal{font-size:12px;color:var(--muted)}
+.cal-meal-body{padding:0 1rem .75rem;display:none}
+.cal-meal-body.open{display:block}
+.cal-entry{display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--border);font-size:13px}
+.cal-entry:last-child{border:none}
+.cal-entry input{border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;flex:1}
+.cal-entry-kcal{font-size:12px;color:var(--muted);min-width:45px;text-align:right}
+.cal-entry-del{font-size:11px;color:var(--hint);background:none;border:none;cursor:pointer;opacity:0;font-family:'DM Sans',sans-serif}
+.cal-entry:hover .cal-entry-del{opacity:1}
+.cal-bar{height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin:.75rem 0 .5rem}
+.cal-fill{height:100%;border-radius:4px;transition:width .4s}
+/* Vægt graf */
+.weight-chart{display:flex;align-items:flex-end;gap:3px;height:60px;margin:.75rem 0}
+.weight-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.weight-bar{width:100%;border-radius:3px 3px 0 0;background:var(--blue-bg);border:1px solid rgba(26,79,138,.2);min-height:2px;transition:height .3s;cursor:pointer}
+.weight-bar.today{background:var(--blue);border-color:var(--blue)}
+.weight-bar-label{font-size:9px;color:var(--hint)}
+/* Dashboard check-in */
+.checkin-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.checkin-card{flex:1;min-width:120px;background:var(--surface);border-radius:var(--radius);padding:.85rem 1rem;border:1px solid transparent;cursor:pointer;transition:all .15s;text-align:center}
+.checkin-card:hover{border-color:var(--border-strong)}
+.checkin-card.done{border-color:var(--green);background:var(--green-bg)}
+.checkin-val{font-size:1.3rem;font-weight:500;font-family:'DM Serif Display',serif;margin-bottom:.15rem}
+.checkin-label{font-size:11px;color:var(--muted)}
+@media(max-width:640px){
+  .shell{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:1rem;flex-direction:column}
+  .sidebar-nav-wrap{display:flex;flex-wrap:wrap;gap:.25rem}
+  .nav-section{display:none}
+  .mode-select{margin-top:.75rem;padding-top:.75rem;display:flex;gap:.25rem;flex-wrap:wrap;align-items:center}
+  .mode-label{display:none}
+  .mode-btn{width:auto;display:inline-block;padding:.3rem .6rem;font-size:12px}
+  .main{padding:1rem}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .dopa-grid{grid-template-columns:1fr}
+  .checkin-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="logo">Mit Overblik</div>
+    <div class="logo-sub" id="sidebar-date"></div>
+    <div class="sidebar-nav-wrap">
+      <div class="nav-section">I dag</div>
+      <button class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">◎</span> Dashboard</button>
+      <button class="nav-item" onclick="nav('habits',this)"><span class="nav-icon">✦</span> Vaner</button>
+      <button class="nav-item" onclick="nav('skincare',this)"><span class="nav-icon">✿</span> Skincare</button>
+      <button class="nav-item" onclick="nav('mad',this)"><span class="nav-icon">◈</span> Mad & madplan</button>
+      <button class="nav-item" onclick="nav('mood',this)"><span class="nav-icon">◇</span> Humør</button>
+      <div class="nav-section">Planlægning</div>
+      <button class="nav-item" onclick="nav('todo',this)"><span class="nav-icon">▣</span> To-do lister</button>
+      <button class="nav-item" onclick="nav('oensker',this)"><span class="nav-icon">✧</span> Ønskeliste</button>
+    </div>
+    <div class="mode-select">
+      <div class="mode-label">Dagstype</div>
+      <button class="mode-btn m-god active" onclick="setMode('god',this)">◉ God dag</button>
+      <button class="mode-btn m-ok" onclick="setMode('ok',this)">◎ OK dag</button>
+      <button class="mode-btn m-daarlig" onclick="setMode('daarlig',this)">○ Dårlig dag</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title" id="dash-title">God morgen</div>
+        <div class="page-date" id="dash-date"></div>
+      </div>
+
+      <!-- Dagligt citat -->
+      <div style="background:var(--surface);border-left:3px solid var(--green);border-radius:0 var(--radius-lg) var(--radius-lg) 0;padding:.85rem 1.1rem;margin-bottom:1rem">
+        <div style="font-size:13px;color:var(--text);line-height:1.6;font-style:italic" id="quote-text">Henter citat...</div>
+        <div style="font-size:11px;color:var(--hint);margin-top:.35rem;font-weight:500" id="quote-author"></div>
+      </div>
+
+      <!-- Morning check-in -->
+      <div class="card">
+        <div class="card-title">Morgen check-in</div>
+        <div class="checkin-row">
+          <div class="checkin-card" id="weight-checkin" onclick="openWeightInput()">
+            <div class="checkin-val" id="dash-weight">— kg</div>
+            <div class="checkin-label">Vægt i dag ✎</div>
+          </div>
+          <div class="checkin-card" id="mood-checkin" onclick="nav('mood',document.querySelector('[onclick*=mood]'))">
+            <div class="checkin-val" id="dash-mood">—</div>
+            <div class="checkin-label">Humør</div>
+          </div>
+          <div class="checkin-card">
+            <div class="checkin-val"><span id="m-habits">0</span><span style="font-size:1rem;color:var(--hint)">/10</span></div>
+            <div class="checkin-label">Vaner gjort</div>
+          </div>
+          <div class="checkin-card">
+            <div class="checkin-val"><span id="m-streak">0</span><span style="font-size:.9rem"> 🔥</span></div>
+            <div class="checkin-label">Streak</div>
+          </div>
+        </div>
+
+        <!-- score ring -->
+        <div class="score-wrap">
+          <div class="score-ring">
+            <svg width="70" height="70" viewBox="0 0 70 70">
+              <circle class="ring-bg" cx="35" cy="35" r="30"/>
+              <circle class="ring-fg" id="ring-fg" cx="35" cy="35" r="30"/>
+            </svg>
+            <div class="score-center"><span class="score-num" id="score-num">0</span><span class="score-sub">point</span></div>
+          </div>
+          <div>
+            <div class="score-title" id="score-title">Start her</div>
+            <div class="score-msg" id="score-msg">Marker dine vaner for at se din score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ugeoverblik integreret -->
+      <div class="card">
+        <div class="card-title">Denne uge</div>
+        <div class="week-grid" id="week-grid"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.75rem;margin-bottom:.4rem">
+          <div style="font-size:11px;color:var(--hint);letter-spacing:.04em;text-transform:uppercase">Vægtudvikling</div>
+          <div style="display:flex;align-items:center;gap:.4rem">
+            <button onclick="shiftWeightChart(-1)" style="border:none;background:var(--surface);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:13px;color:var(--muted);line-height:1">←</button>
+            <span id="weight-week-label" style="font-size:11px;color:var(--muted);min-width:80px;text-align:center">Denne uge</span>
+            <button id="weight-next-btn" onclick="shiftWeightChart(1)" style="border:none;background:var(--surface);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:13px;color:var(--muted);line-height:1;opacity:.3">→</button>
+          </div>
+        </div>
+        <canvas id="weight-canvas" height="70" style="width:100%;display:block;cursor:grab;touch-action:pan-y"></canvas>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+          <span class="pill pill-green" style="cursor:default">✓ God dag</span>
+          <span class="pill pill-amber" style="cursor:default">~ OK dag</span>
+          <span class="pill pill-red" style="cursor:default">↓ Hård dag</span>
+        </div>
+      </div>
+
+      <!-- Minimumsmål -->
+      <div class="card">
+        <div class="card-title">Minimumsmål — selv på dårlige dage</div>
+        <div class="habit-row"><div class="habit-left"><div class="habit-name">2 × gåtur med Charlie</div></div><button onclick="toggleMin('min-charlie',this)" class="pill pill-amber" id="min-charlie">Ikke endnu</button></div>
+        <div class="habit-row"><div class="habit-left"><div class="habit-name">Rede sengen</div></div><button onclick="toggleMin('min-bed',this)" class="pill pill-amber" id="min-bed">Ikke endnu</button></div>
+        <div class="habit-row"><div class="habit-left"><div class="habit-name">Høj musik og bevægelse</div></div><button onclick="toggleMin('min-music',this)" class="pill pill-amber" id="min-music">Ikke endnu</button></div>
+      </div>
+
+      <!-- Indkøbsliste -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div class="card-title" style="margin-bottom:0">Indkøbsliste</div>
+          <button class="pill pill-amber" onclick="clearCheckedGrocery()">Ryd afkrydsede</button>
+        </div>
+        <div class="grocery-grid" id="food-grocery"></div>
+        <button class="add-btn" onclick="addGrocery()">+ Tilføj vare</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Notat til i dag</div>
+        <textarea id="daily-note" placeholder="Hvad er op og ned i dag?"></textarea>
+      </div>
+    </div>
+
+    <!-- VANER -->
+    <div class="page" id="page-habits">
+      <div class="page-header"><div class="page-title">Vaner</div></div>
+      <div class="card"><div class="card-title">Bevægelse & krop</div><div id="habit-movement"></div></div>
+      <div class="card"><div class="card-title">Mad & ernæring</div><div id="habit-food"></div></div>
+      <div class="card"><div class="card-title">Mental ro</div><div id="habit-mental"></div></div>
+    </div>
+
+    <!-- SKINCARE -->
+    <div class="page" id="page-skincare">
+      <div class="page-header"><div class="page-title">Skincare</div></div>
+      <div class="tab-row">
+        <button class="tab-pill active" onclick="skinTab('morgen',this)">Morgen</button>
+        <button class="tab-pill" onclick="skinTab('aften',this)">Aften</button>
+        <button class="tab-pill" onclick="skinTab('retinol',this)">Retinol skema</button>
+        <button class="tab-pill" onclick="skinTab('shopping',this)">Indkøb</button>
+        <button class="tab-pill" onclick="skinTab('info',this)">Plan & info</button>
+      </div>
+      <div class="tab-content active" id="skin-morgen">
+        <div class="card">
+          <div class="card-title">Morgenrutine — tjekliste</div>
+          <span class="phase-badge phase1" id="phase-badge-am">Fase 1 — Calm down</span>
+          <div id="skin-am-steps"></div>
+          <div style="margin-top:.75rem;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--muted)" id="skin-am-count">0/0 trin gjort</span>
+            <button class="pill pill-pink" onclick="resetSkin('am')">Nulstil</button>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="skin-aften">
+        <div class="card">
+          <div class="card-title">Aftenrutine — tjekliste</div>
+          <span class="phase-badge phase1" id="phase-badge-pm">Fase 1 — Calm down</span>
+          <div id="skin-pm-steps"></div>
+          <div style="margin-top:.75rem;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--muted)" id="skin-pm-count">0/0 trin gjort</span>
+            <button class="pill pill-pink" onclick="resetSkin('pm')">Nulstil</button>
+          </div>
+        </div>
+      </div>
+      <!-- RETINOL TAB — interaktiv -->
+      <div class="tab-content" id="skin-retinol">
+        <div class="card">
+          <div class="card-title">Retinol skema — fase 2</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:.85rem">Kun mandag, torsdag og søndag. Pea-sized amount — ikke mere. Klik på dagen for at markere gjort.</div>
+          <div id="retinol-week-interactive"></div>
+          <div style="margin-top:.75rem;font-size:12px;color:var(--hint)">Retinol-dage nulstiller sig automatisk hver uge.</div>
+        </div>
+      </div>
+      <div class="tab-content" id="skin-shopping">
+        <div class="card">
+          <div class="card-title">Skincare indkøbsliste</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Klik for at afkrydse det du har</div>
+          <div id="skin-grocery"></div>
+        </div>
+      </div>
+      <div class="tab-content" id="skin-info">
+        <div class="card">
+          <div class="card-title">Fase 1 — Calm the hell down (2–3 uger)</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7">Målet er at stoppe inflammation og genopbygge hudbarrieren. Ingen nye aktive ingredienser. Ingen glycolic acid. Pause retinol hvis huden brænder.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fase 2 — Glow + anti-aging + acne</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7">Retinol igen — men kun man/tor/søn, pea-sized amount. Glycolic acid max én gang ugentligt. Azelaic acid mod rødme og udbrud.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Skift fase</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">Skift når du er klar — typisk efter 2–3 uger i fase 1</div>
+          <div style="display:flex;gap:.5rem">
+            <button onclick="setPhase(1)" class="pill pill-green">Fase 1 aktiv</button>
+            <button onclick="setPhase(2)" class="pill pill-pink">Skift til fase 2</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAD -->
+    <div class="page" id="page-mad">
+      <div class="page-header"><div class="page-title">Mad & madplan</div></div>
+
+      <!-- Ugentlig madplan -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <div class="card-title" style="margin-bottom:0">Ugens madplan</div>
+          <span id="sunday-badge" style="display:none" class="pill pill-amber">☀ Plandag i dag</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Planlæg om søndagen for hele ugen ad gangen.</div>
+        <div id="madplan-grid"></div>
+        <div id="sunday-prompt" style="display:none;margin-top:.75rem;padding:.85rem 1rem;background:var(--amber-bg);border-radius:var(--radius);border:1px solid rgba(139,94,10,.15)">
+          <div style="font-size:13px;font-weight:500;color:var(--amber);margin-bottom:.25rem">Det er søndag — plandag</div>
+          <div style="font-size:12px;color:var(--amber)">Udfyld madplan herover og lav din indkøbsliste på dashboard.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUMØR -->
+    <div class="page" id="page-mood">
+      <div class="page-header"><div class="page-title">Humør & nervesystem</div></div>
+      <div class="card">
+        <div class="card-title">Hvordan har du det?</div>
+        <div style="display:flex;gap:.5rem;margin-bottom:.75rem" id="mood-row">
+          <button class="mood-btn" onclick="setMood(this,'😴','blue','Træt og flat — find ro i rutinen.')">😴</button>
+          <button class="mood-btn" onclick="setMood(this,'😟','red','Angst-dag. Bad day protocol er din ven.')">😟</button>
+          <button class="mood-btn" onclick="setMood(this,'😐','amber','Middel dag. OK er faktisk nok.')">😐</button>
+          <button class="mood-btn" onclick="setMood(this,'🙂','green','God dag. Nyd det uden at analysere det.')">🙂</button>
+          <button class="mood-btn" onclick="setMood(this,'💪','purple','Du er på — brug energien til noget du vil huske.')">💪</button>
+        </div>
+        <div id="mood-text" style="font-size:13px;color:var(--muted);min-height:20px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Angst-niveau (1–10)</div>
+        <div class="range-row">
+          <span style="font-size:12px;color:var(--muted)">rolig</span>
+          <input type="range" min="1" max="10" value="5" id="anxiety-slider" oninput="updateAnxiety(this.value)">
+          <span style="font-size:12px;color:var(--muted)">fuld panik</span>
+        </div>
+        <div style="text-align:center;font-size:1.5rem;font-weight:500;margin:.5rem 0" id="anxiety-val">5</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bad day protocol — angst over 7</div>
+        <div class="habit-row"><div class="habit-left"><div class="habit-name">Gå udenfor — bare 10 min</div></div><button onclick="togglePill(this)" class="pill pill-amber">ugjort</button></div>
+        <div class="habit-row"><div class="habit-left"><div class="habit-name">Én kop te, ingen skærm</div></div><button onclick="togglePill(this)" class="pill pill-amber">ugjort</button></div>
+        <div class="habit-row"><div class="habit-left"><div class="habit-name">Ring/skriv til én person</div></div><button onclick="togglePill(this)" class="pill pill-amber">ugjort</button></div>
+        <div class="habit-row"><div class="habit-left"><div class="habit-name">Ét måltid — behøver ikke være perfekt</div></div><button onclick="togglePill(this)" class="pill pill-amber">ugjort</button></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dopamin-udskiftning</div>
+        <div class="dopa-grid" id="dopa-grid"></div>
+      </div>
+    </div>
+
+    <!-- TO-DO -->
+    <div class="page" id="page-todo">
+      <div class="page-header">
+        <div class="page-title">To-do lister</div>
+        <div class="page-date" id="todo-date"></div>
+      </div>
+      <div class="card" style="border-color:rgba(45,106,79,.25)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+          <div class="card-title" style="margin-bottom:0">Dagens opgaver</div>
+          <span style="font-size:11px;color:var(--green);font-weight:500">Udfyld hver morgen</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:.85rem">Max 3–5 opgaver. Hvad skal der faktisk ske i dag?</div>
+        <div id="todo-today"></div>
+        <button class="add-btn" onclick="addTodo('today')">+ Tilføj dagens opgave</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Denne uge</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Opgaver der ikke haster i dag men skal klares inden søndag.</div>
+        <div id="todo-week"></div>
+        <button class="add-btn" onclick="addTodo('week')">+ Tilføj ugeopgave</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Huskeliste — ingen deadline</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Ideer, ærinder og ting der ikke må glemmes.</div>
+        <div id="todo-general"></div>
+        <button class="add-btn" onclick="addTodo('general')">+ Tilføj</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Ugentlig reset — opdateres hver søndag</div>
+        <div id="weekly-reset-list"></div>
+      </div>
+    </div>
+
+    <!-- ØNSKELISTE -->
+    <div class="page" id="page-oensker">
+      <div class="page-header"><div class="page-title">Ønskeliste</div></div>
+      <div class="tab-row">
+        <button class="tab-pill active" onclick="wishTab('toej',this)">Tøj</button>
+        <button class="tab-pill" onclick="wishTab('hjem',this)">Hjem</button>
+        <button class="tab-pill" onclick="wishTab('andet',this)">Andet</button>
+      </div>
+      <div class="tab-content active" id="wish-toej">
+        <div class="card">
+          <div class="card-title">Tøj & accessories</div>
+          <div id="wish-list-toej"></div>
+          <button class="add-btn" onclick="addWish('toej')">+ Tilføj ønske</button>
+        </div>
+      </div>
+      <div class="tab-content" id="wish-hjem">
+        <div class="card">
+          <div class="card-title">Til hjemmet</div>
+          <div id="wish-list-hjem"></div>
+          <button class="add-btn" onclick="addWish('hjem')">+ Tilføj ønske</button>
+        </div>
+      </div>
+      <div class="tab-content" id="wish-andet">
+        <div class="card">
+          <div class="card-title">Andet</div>
+          <div id="wish-list-andet"></div>
+          <button class="add-btn" onclick="addWish('andet')">+ Tilføj ønske</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<!-- Vægt modal -->
+<div id="weight-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:var(--radius-lg);padding:1.5rem;width:min(320px,90vw);box-shadow:0 8px 32px rgba(0,0,0,.15)">
+    <div style="font-size:16px;font-weight:500;margin-bottom:1rem">Vægt i dag</div>
+    <input id="weight-input" type="text" inputmode="decimal" placeholder="fx 68.5" style="width:100%;border:1px solid var(--border-strong);border-radius:var(--radius);padding:.75rem 1rem;font-size:1.2rem;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;text-align:center;margin-bottom:1rem">
+    <div style="display:flex;gap:.5rem">
+      <button onclick="closeWeightModal()" style="flex:1;padding:.65rem;border-radius:var(--radius);border:1px solid var(--border-strong);background:none;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;color:var(--muted)">Annuller</button>
+      <button onclick="saveWeight()" style="flex:1;padding:.65rem;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;font-weight:500">Gem</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dag-detalje modal -->
+<div id="day-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:var(--radius-lg);padding:1.5rem;width:min(380px,92vw);max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div style="font-size:16px;font-weight:500" id="day-modal-title">Mandag</div>
+      <button onclick="closeDayModal()" style="border:none;background:none;font-size:18px;cursor:pointer;color:var(--muted);padding:0 4px">✕</button>
+    </div>
+    <!-- Vægt for den dag -->
+    <div style="margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Vægt</div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <input id="day-weight-input" type="text" inputmode="decimal" placeholder="—" style="width:90px;border:1px solid var(--border-strong);border-radius:var(--radius);padding:.5rem .75rem;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;transition:border .2s">
+        <span style="font-size:13px;color:var(--muted)">kg</span>
+        <button onclick="saveDayWeight()" class="pill pill-green" style="margin-left:auto">Gem</button>
+      </div>
+    </div>
+    <!-- Vaner for den dag -->
+    <div style="font-size:11px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">Vaner</div>
+    <div id="day-modal-habits"></div>
+    <!-- Notat -->
+    <div style="font-size:11px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin:.75rem 0 .4rem">Notat</div>
+    <div id="day-modal-note" style="font-size:13px;color:var(--muted);background:var(--surface);border-radius:var(--radius);padding:.65rem .85rem;min-height:40px;line-height:1.6"></div>
+  </div>
+</div>
+
+
+<script>
+const RUN_DAYS=[1,3,6];
+const TODAY_DOW=new Date().getDay();
+const IS_RUN_DAY=RUN_DAYS.includes(TODAY_DOW);
+const NEXT_RUN_NAME=['søn','man','tir','ons','tor','fre','lør'][RUN_DAYS.find(d=>d>TODAY_DOW)||RUN_DAYS[0]];
+
+const HABITS={
+  movement:[
+    {id:'charlie1',label:'Gåtur med Charlie — morgen',sub:'Min. 20 min',min:true,pts:10},
+    {id:'charlie2',label:'Gåtur med Charlie — middag',sub:'Min. 20 min',min:true,pts:10},
+    {id:'charlie3',label:'Gåtur med Charlie — aften',sub:'Min. 20 min',min:false,pts:10},
+    IS_RUN_DAY
+      ?{id:'run',label:'Løbetur',sub:'Man · Ons · Lør — i dag er det din tur',min:false,pts:20}
+      :{id:'run',label:'Løbetur',sub:'Ikke løbedag i dag — næste: '+NEXT_RUN_NAME,min:false,pts:20,inactive:true}
+  ],
+  food:[
+    {id:'protein_h',label:'Protein-mål nået',sub:'130g+',min:false,pts:15},
+    {id:'water',label:'Vand — 2L',sub:'Hold styr på det',min:false,pts:10}
+  ],
+  mental:[
+    {id:'bed',label:'Rede sengen',sub:'Første sejr på dagen',min:true,pts:10},
+    {id:'music',label:'Høj musik og bevægelse',sub:'Dans, hop, gøre sig selv glad',min:true,pts:10},
+    {id:'read',label:'Læs 15 sider',sub:'Vilkårlig bog — ingen podcasts tæller',min:false,pts:15},
+    {id:'noscroll',label:'Ingen doomscrolling',sub:'Max 30 min sociale medier',min:false,pts:15},
+    {id:'sleep',label:'I seng inden 23',sub:'Nervesystem reset',min:false,pts:15}
+  ]
+};
+
+const SKIN_STEPS={
+  am:{
+    phase1:[
+      {name:'Rens',product:'CeraVe Hydrating Cleanser',note:'Lunkent vand, ingen skrubning. Kun vand hvis huden ikke er snavset.'},
+      {name:'Niacinamide serum',product:'The Ordinary Niacinamide 10% + Zinc',note:'Let lag — god mod udbrud og rødme. Spring over hvis huden svier.'},
+      {name:'Snail essence (valgfri)',product:'Cosrx Advanced Snail 96 Mucin Power Essence',note:'Kan bruges efter niacinamide — ekstra fugt og heling.'},
+      {name:'Fugtighedscreme',product:'LRP Cicaplast Baume B5+',note:'Generøst lag — barriere og ro. Alternativt Toleriane Sensitive Riche.'},
+      {name:'Øjencreme',product:'LRP Pigmentclar Eyes',note:'Blid bank med ringfingeren — aldrig gnid.'},
+      {name:'SPF 50+',product:'Beauty of Joseon Relief Sun',note:'ALTID — uanset vejr. Sidste trin inden du går ud.'}
+    ],
+    phase2:[
+      {name:'Rens',product:'CeraVe Hydrating Cleanser',note:'Lunkent vand.'},
+      {name:'Niacinamide serum',product:'The Ordinary Niacinamide 10% + Zinc',note:''},
+      {name:'Snail essence',product:'Cosrx Advanced Snail 96 Mucin Power Essence',note:''},
+      {name:'Fugtighedscreme',product:'CeraVe Moisturising Cream',note:'Lettere end Cicaplast til dagbrug i fase 2.'},
+      {name:'Øjencreme',product:'LRP Pigmentclar Eyes',note:''},
+      {name:'SPF 50+',product:'Beauty of Joseon Relief Sun',note:'ALTID.'}
+    ]
+  },
+  pm:{
+    phase1:[
+      {name:'Dobbeltrens trin 1',product:'Beauty of Joseon Ginseng Cleansing Oil',note:'Massér tørt ind i ansigtet i 60 sek, emulgér med lidt vand, skyl.'},
+      {name:'Dobbeltrens trin 2',product:'CeraVe Hydrating Cleanser',note:'Skyl grundigt med lunkent vand.'},
+      {name:'Barrierecreme',product:'LRP Cicaplast Baume B5+',note:'Tykt lag — lad huden restituere natten over. Ingen aktive i fase 1.'}
+    ],
+    phase2:[
+      {name:'Dobbeltrens trin 1',product:'Beauty of Joseon Ginseng Cleansing Oil',note:'Massér tørt ind i ansigtet i 60 sek, emulgér med lidt vand, skyl.'},
+      {name:'Dobbeltrens trin 2',product:'CeraVe Hydrating Cleanser',note:''},
+      {name:'Retinol (man/tor/søn KUN)',product:'LRP Retinol B3 Serum ELLER The Ordinary Retinol 0.5%',note:'Pea-sized amount på tørt ansigt. LRP B3 er blødere — start her. TO er stærkere.'},
+      {name:'Fugt efter retinol',product:'LRP Cicaplast Baume B5+',note:'Altid fugt efter retinol — aldrig spring over.'},
+      {name:'Øvrige aftener: Snail + fugt',product:'Cosrx Snail 96 + Toleriane Sensitive Riche',note:'På de dage uden retinol — ekstra heling og fugt.'},
+      {name:'Glycolic acid (max 1x/uge)',product:'The Ordinary Glycolic Acid 7%',note:'Ikke samme nat som retinol. Torsdag eller fredag aften.'}
+    ]
+  }
+};
+
+const RETINOL_DAYS_IDX=[1,4,0]; // man, tor, søn
+const RETINOL_LABELS=['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+const SKIN_GROCERY=[
+  {name:'CeraVe Hydrating Cleanser',cat:'Har'},
+  {name:'Beauty of Joseon Ginseng Cleansing Oil',cat:'Har'},
+  {name:'The Ordinary Niacinamide 10% + Zinc',cat:'Har'},
+  {name:'Cosrx Advanced Snail 96 Mucin Power Essence',cat:'Har'},
+  {name:'LRP Cicaplast Baume B5+',cat:'Har'},
+  {name:'LRP Toleriane Sensitive Riche',cat:'Har'},
+  {name:'CeraVe Moisturising Cream',cat:'Har'},
+  {name:'LRP Pigmentclar Eyes',cat:'Har'},
+  {name:'LRP Toleriane Dermallergo Eye',cat:'Har'},
+  {name:'Beauty of Joseon Relief Sun SPF50+',cat:'Har'},
+  {name:'LRP Retinol B3 Serum',cat:'Har'},
+  {name:'The Ordinary Retinol 0.5% in Squalane',cat:'Har'},
+  {name:'The Ordinary Glycolic Acid 7%',cat:'Har'},
+  {name:'The Ordinary Azelaic Acid 10%',cat:'Mangler — anbefalet mod rødme'},
+];
+const FOOD_GROCERY=['Kyllingefilet','Laks (frossen ok)','Æg (12 stk)','Skyr (lactosefri)','Havregryn','Quinoa','Søde kartofler','Spinat','Agurk','Cherry tomater','Bær (frosne)','Peanutbutter','Riskagebede','Avocado','Citron','Hvidløg','Kokosmælk','Linser'];
+const DOPAMINE=['Musik høj volumen','Gå tur med Charlie','Ring til en veninde','Løbetur','Danse i stuen','Podcast + rengøring','Langt bad','Tegne eller skrive'];
+const DAYS_DA=['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+const MSGS=['Start med gåturen — det er nok.','Godt i gang. Bliv ved.','Du er på rette vej.','Flot dag — brug det momentum.','Stjernedag. Seriøst.'];
+
+const WEEKLY_RESET=[
+  'Ryd ud i indbakke','Planlæg næste uges mad','Skift sengetøj',
+  'Rengør badeværelse','Rengør køleskab','Gå tur et nyt sted',
+  'Én social ting planlagt','Læs eller hør podcast (ikke arbejde)'
+];
+
+// ─── SUPABASE ────────────────────────────────────────────────
+const SUPABASE_URL='https://rqjmodolynfdmvieseny.supabase.co';
+const SUPABASE_KEY='sb_publishable_PsHwUN_xZl5-UV7iKLdEQQ_ts6XggqF';
+const USER_ID='falkenquist';
+
+async function dbSave(key,value){
+  try{
+    // Prøv først at opdatere eksisterende række
+    const patch=await fetch(SUPABASE_URL+'/rest/v1/overblik?user_id=eq.'+USER_ID+'&data_key=eq.'+encodeURIComponent(key),{
+      method:'PATCH',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SUPABASE_KEY,
+        'Authorization':'Bearer '+SUPABASE_KEY,
+        'Prefer':'return=minimal'
+      },
+      body:JSON.stringify({data_value:JSON.stringify(value),updated_at:new Date().toISOString()})
+    });
+    if(patch.ok){
+      // Tjek om der var en række at opdatere
+      const count=patch.headers.get('content-range');
+      if(count&&count.startsWith('0')||patch.status===204){
+        // Ingen eksisterende række — indsæt ny
+        await fetch(SUPABASE_URL+'/rest/v1/overblik',{
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'apikey':SUPABASE_KEY,
+            'Authorization':'Bearer '+SUPABASE_KEY,
+            'Prefer':'return=minimal'
+          },
+          body:JSON.stringify({user_id:USER_ID,data_key:key,data_value:JSON.stringify(value),updated_at:new Date().toISOString()})
+        });
+      }
+    }
+    return true;
+  }catch(e){return false}
+}
+
+async function dbLoad(){
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/overblik?user_id=eq.'+USER_ID+'&select=data_key,data_value&order=updated_at.desc',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const rows=await res.json();
+    if(rows&&Array.isArray(rows)&&rows.length){
+      const merged={};
+      rows.forEach(r=>{try{merged[r.data_key]=JSON.parse(r.data_value)}catch{}});
+      return merged;
+    }
+  }catch(e){console.log('Supabase load fejl:',e)}
+  try{return JSON.parse(localStorage.getItem('mette_v3')||'{}')}catch{return{}}
+}
+
+// ─── STATE ───────────────────────────────────────────────────
+function loadState(){try{return JSON.parse(localStorage.getItem('mette_v3')||'{}')}catch{return{}}}
+function saveState(){
+  localStorage.setItem('mette_v3',JSON.stringify(state));
+  const wk=weekKey();
+  // Gem altid begge — vis dot når begge er gemt
+  const saves=[
+    state[TODAY]?dbSave(TODAY,state[TODAY]):Promise.resolve(true),
+    state[wk]?dbSave(wk,state[wk]):Promise.resolve(true)
+  ];
+  Promise.all(saves).then(results=>{
+    showSyncDot(results.every(r=>r!==false));
+  }).catch(()=>showSyncDot(false));
+}
+
+function showSyncDot(ok){
+  let dot=document.getElementById('sync-dot');
+  if(!dot){dot=document.createElement('div');dot.id='sync-dot';dot.style.cssText='position:fixed;bottom:12px;right:12px;width:8px;height:8px;border-radius:50%;z-index:999;transition:opacity 2s ease';document.body.appendChild(dot)}
+  dot.style.background=ok?'#2D6A4F':'#8B2020';dot.style.opacity='1';
+  setTimeout(()=>{dot.style.opacity='0'},2000);
+}
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function weekKey(){
+  const d=new Date(),dow=(d.getDay()+6)%7,mon=new Date(d);
+  mon.setDate(d.getDate()-dow);return'week_'+mon.toISOString().slice(0,10);
+}
+
+let state=loadState();
+const TODAY=todayKey();
+let weightChartOffset=0;
+
+function D(){
+  if(!state[TODAY])state[TODAY]={
+    habits:{},protein:0,note:'',mood:null,anxiety:5,weight:null,
+    skinAm:{},skinPm:{},retinolDone:{},grocery_skin:{},dopa:{},
+    todos:{today:[],week:[],general:[]},
+    weeklyReset:{}
+  };
+  return state[TODAY];
+}
+function W(){
+  const k=weekKey();
+  if(!state[k])state[k]={madplan:{},grocery_food_items:[],wishes:{toej:[],hjem:[],andet:[]}};
+  // Sørg for grocery altid er et array, aldrig null
+  if(!state[k].grocery_food_items||!Array.isArray(state[k].grocery_food_items)){
+    state[k].grocery_food_items=FOOD_GROCERY.map(n=>({name:n,done:false}));
+  }
+  return state[k];
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+async function init(){
+  // Render straks fra localStorage så siden ikke er blank
+  renderAll();
+  // Hent fra Supabase — remote erstatter lokal
+  try{
+    const remote=await dbLoad();
+    if(remote&&Object.keys(remote).length>0){
+      state=remote;
+      localStorage.setItem('mette_v3',JSON.stringify(state));
+      renderAll();
+    }
+  }catch(e){console.log('Supabase sync fejl:',e)}
+  document.getElementById('weight-input').addEventListener('keydown',e=>{if(e.key==='Enter')saveWeight()});
+  document.getElementById('weight-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeWeightModal()});
+  document.getElementById('day-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDayModal()});
+
+  // Drag/swipe på vægt-kurven
+  const wc=document.getElementById('weight-canvas');
+  if(wc){
+    let dragX=null;
+    wc.addEventListener('mousedown',e=>{dragX=e.clientX;wc.style.cursor='grabbing'});
+    window.addEventListener('mouseup',e=>{
+      if(dragX===null)return;
+      const dx=e.clientX-dragX;
+      if(dx<-40)shiftWeightChart(-1);
+      else if(dx>40)shiftWeightChart(1);
+      dragX=null;wc.style.cursor='grab';
+    });
+    wc.addEventListener('touchstart',e=>{dragX=e.touches[0].clientX},{passive:true});
+    wc.addEventListener('touchend',e=>{
+      if(dragX===null)return;
+      const dx=e.changedTouches[0].clientX-dragX;
+      if(dx<-40)shiftWeightChart(-1);
+      else if(dx>40)shiftWeightChart(1);
+      dragX=null;
+    });
+  }
+}
+
+function renderAll(){
+  setDate();showQuote();renderHabits();renderSkinSteps();renderRetinolInteractive();
+  renderSkinGrocery();renderFoodGrocery();renderDopa();
+  renderWeekGrid();renderWeightChart();
+  renderMadplan();renderTodos();renderWeeklyReset();renderWishes();
+  restoreSliders();restoreNote();
+  restoreMinimums();updateScore();updateStreak();updateDashboard();
+}
+
+function setDate(){
+  const d=new Date(),str=d.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'});
+  ['sidebar-date','dash-date','todo-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=str});
+  const h=d.getHours();
+  document.getElementById('dash-title').textContent=h<11?'God morgen':h<17?'Hej igen':h<21?'God aften':'God nat';
+  if(D().mood){document.getElementById('dash-mood').textContent=D().mood;document.getElementById('mood-checkin').classList.add('done')}
+  if(D().weight!=null){document.getElementById('dash-weight').textContent=D().weight+' kg';document.getElementById('weight-checkin').classList.add('done')}
+}
+
+// ─── NAV ─────────────────────────────────────────────────────
+function nav(name,btn){
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('page-'+name).classList.add('active');
+}
+function setMode(m,btn){document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function skinTab(name,btn){
+  document.querySelectorAll('.tab-pill').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#page-skincare .tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');document.getElementById('skin-'+name).classList.add('active');
+}
+function wishTab(name,btn){
+  document.querySelectorAll('#page-oensker .tab-pill').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#page-oensker .tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');document.getElementById('wish-'+name).classList.add('active');
+}
+
+// ─── WEEK GRID ───────────────────────────────────────────────
+function renderWeekGrid(){
+  const el=document.getElementById('week-grid');
+  const todayDow=(new Date().getDay()+6)%7,now=new Date();
+  el.innerHTML=DAYS_DA.map((d,i)=>{
+    const date=new Date(now);date.setDate(date.getDate()-(todayDow-i));
+    const key=date.toISOString().slice(0,10),isToday=i===todayDow;
+    let cls='';
+    if(isToday)cls='today';
+    else if(state[key]){const cnt=Object.values(state[key].habits||{}).filter(v=>v==='done').length;if(cnt>=7)cls='good';else if(cnt>=3)cls='ok';else if(cnt>0)cls='tough'}
+    const sym=isToday?'●':cls==='good'?'✓':cls==='ok'?'~':cls==='tough'?'↓':'–';
+    const col=isToday?'var(--blue)':cls==='good'?'var(--green)':cls==='ok'?'var(--amber)':cls==='tough'?'var(--red)':'var(--hint)';
+    const weight=(state[key]||{}).weight;
+    return`<div class="day-cell ${cls}" onclick="openDayModal('${key}','${d}')" style="cursor:pointer">
+      <div class="day-name">${d}</div>
+      <div class="day-score" style="color:${col}">${sym}</div>
+      ${weight?`<div style="font-size:9px;color:var(--hint);margin-top:2px">${weight}kg</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ─── WEIGHT CHART ────────────────────────────────────────────
+function shiftWeightChart(delta){
+  const next=weightChartOffset+delta;
+  if(next>0)return;
+  weightChartOffset=next;
+  renderWeightChart();
+}
+
+function renderWeightChart(){
+  const canvas=document.getElementById('weight-canvas');
+  if(!canvas)return;
+
+  // Opdater label og knapper
+  const label=document.getElementById('weight-week-label');
+  const nextBtn=document.getElementById('weight-next-btn');
+  if(label){
+    if(weightChartOffset===0)label.textContent='Denne uge';
+    else if(weightChartOffset===-1)label.textContent='Sidste uge';
+    else label.textContent=Math.abs(weightChartOffset)+' uger siden';
+  }
+  if(nextBtn)nextBtn.style.opacity=weightChartOffset===0?'.3':'1';
+
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||300,H=70;
+  canvas.width=W;canvas.height=H;
+
+  const now=new Date();
+  const todayDow=(now.getDay()+6)%7;
+  const weekMon=new Date(now);
+  weekMon.setDate(now.getDate()-todayDow+(weightChartOffset*7));
+
+  const isCurrentWeek=weightChartOffset===0;
+  const pts=DAYS_DA.map((d,i)=>{
+    const date=new Date(weekMon);date.setDate(weekMon.getDate()+i);
+    if(isCurrentWeek&&i>todayDow)return null;
+    return(state[date.toISOString().slice(0,10)]||{}).weight||null;
+  });
+
+  const vals=pts.filter(Boolean);
+  if(vals.length<2){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#B0AEA6';ctx.font='11px Montserrat,sans-serif';ctx.textAlign='center';
+    ctx.fillText('Ingen vægtdata denne uge',W/2,H/2);
+    return;
+  }
+  const mn=Math.min(...vals)-.5,mx=Math.max(...vals)+.5;
+  const xStep=W/6;
+  const yOf=v=>H-4-((v-mn)/(mx-mn))*(H-14);
+  ctx.clearRect(0,0,W,H);
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(45,106,79,.18)');grad.addColorStop(1,'rgba(45,106,79,0)');
+  ctx.beginPath();let first=true;
+  pts.forEach((v,i)=>{if(v==null)return;const x=i*xStep,y=yOf(v);if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y)});
+  ctx.lineTo((pts.length-1)*xStep,H);ctx.lineTo(0,H);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();first=true;
+  pts.forEach((v,i)=>{if(v==null)return;const x=i*xStep,y=yOf(v);if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y)});
+  ctx.strokeStyle='#2D6A4F';ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
+  pts.forEach((v,i)=>{
+    if(v==null)return;
+    const x=i*xStep,y=yOf(v),isToday=isCurrentWeek&&i===todayDow;
+    ctx.beginPath();ctx.arc(x,y,isToday?4:3,0,Math.PI*2);
+    ctx.fillStyle=isToday?'#2D6A4F':'#FFFFFF';ctx.fill();
+    ctx.strokeStyle='#2D6A4F';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#7A7870';ctx.font='9px Montserrat,sans-serif';ctx.textAlign='center';
+    ctx.fillText(v+'kg',x,y-7);
+  });
+}
+
+const QUOTES=[
+  {text:'Du behøver ikke se hele trappen. Tag bare det første trin.',author:'Martin Luther King Jr.'},
+  {text:'Fremskridt, ikke perfektion.',author:''},
+  {text:'Hver dag er en ny chance for at starte forfra.',author:''},
+  {text:'Din eneste konkurrent er den du var i går.',author:''},
+  {text:'Ro er ikke fravær af storm. Det er fred midt i stormen.',author:''},
+  {text:'Du er stærk nok. Du har altid været det.',author:''},
+  {text:'Små skridt tæller. Selv de mindste bevægelser fremad er fremskridt.',author:''},
+  {text:'Pas på dig selv med samme omsorg du ville give en god veninde.',author:''},
+  {text:'Det er lov at have en dårlig dag uden at det definerer dig.',author:''},
+  {text:'En god rutine er selvkærlighed i praksis.',author:''},
+  {text:'Kroppen opnår hvad sindet tror.',author:''},
+  {text:'Det er okay ikke at vide hvad der sker næste. Start alligevel.',author:''},
+];
+function showQuote(){
+  const q=QUOTES[new Date().getDate()%QUOTES.length];
+  const qt=document.getElementById('quote-text');
+  const qa=document.getElementById('quote-author');
+  if(qt)qt.textContent='"'+q.text+'"';
+  if(qa)qa.textContent=q.author?'— '+q.author:'';
+}
+
+// ─── HABITS ──────────────────────────────────────────────────
+function renderHabits(){
+  ['movement','food','mental'].forEach(cat=>{
+    const el=document.getElementById('habit-'+cat);
+    el.innerHTML=HABITS[cat].map(h=>{
+      const s=D().habits[h.id],inactive=h.inactive;
+      return`<div class="habit-row" style="${inactive?'opacity:.4':''}">
+        <div class="habit-left">
+          <div class="habit-name">${h.label}${h.min?'<span class="min-badge">min</span>':''}</div>
+          <div class="habit-sub">${h.sub}</div>
+          <div class="habit-pts">${inactive?'Hviledag':'+'+(h.pts)+' point'}</div>
+        </div>
+        <div class="habit-actions">
+          <button class="check-btn ${s==='done'?'done':''}" ${inactive?'disabled':''} onclick="markHabit('${h.id}','done',this)">✓</button>
+          <button class="check-btn ${s==='skip'?'skip':''}" ${inactive?'disabled':''} onclick="markHabit('${h.id}','skip',this)">–</button>
+        </div>
+      </div>`;
+    }).join('');
+  });
+  updateScore();updateDashboard();
+}
+function markHabit(id,s){
+  D().habits[id]=D().habits[id]===s?null:s;saveState();renderHabits();renderWeekGrid();
+}
+function updateScore(){
+  let pts=0,cnt=0;
+  const all=[...HABITS.movement,...HABITS.food,...HABITS.mental].filter(h=>!h.inactive);
+  const total=all.length;
+  all.forEach(h=>{if(D().habits[h.id]==='done'){pts+=h.pts;cnt++}});
+  const maxPts=all.reduce((a,h)=>a+h.pts,0);
+  document.getElementById('score-num').textContent=pts;
+  document.getElementById('m-habits').textContent=cnt;
+  document.querySelector('#m-habits').parentElement.querySelector('span:last-child').textContent='/'+total;
+  const offset=188-(188*(maxPts>0?pts/maxPts:0));
+  document.getElementById('ring-fg').style.strokeDashoffset=offset;
+  document.getElementById('score-title').textContent=cnt===0?'Start her':cnt>=total?'Fantastisk dag':'Godt i gang';
+  document.getElementById('score-msg').textContent=cnt===0?'Marker dine vaner for at se din score':MSGS[Math.min(Math.floor(cnt/2),MSGS.length-1)];
+}
+function toggleMin(id,btn){
+  if(!D().minimums)D().minimums={};
+  D().minimums[id]=!D().minimums[id];
+  const done=D().minimums[id];
+  btn.textContent=done?'Gjort ✓':'Ikke endnu';
+  btn.className='pill '+(done?'pill-green':'pill-amber');
+  saveState();
+}
+function restoreMinimums(){
+  const mins=D().minimums||{};
+  ['min-charlie','min-bed','min-music'].forEach(id=>{
+    const btn=document.getElementById(id);if(!btn)return;
+    const done=!!mins[id];
+    btn.textContent=done?'Gjort ✓':'Ikke endnu';
+    btn.className='pill '+(done?'pill-green':'pill-amber');
+  });
+}
+function updateDashboard(){restoreMinimums()}
+function updateStreak(){
+  let streak=0;const d=new Date();
+  for(let i=0;i<30;i++){const k=new Date(d);k.setDate(k.getDate()-i);const key=k.toISOString().slice(0,10);const day=state[key];if(!day)break;const cnt=Object.values(day.habits||{}).filter(v=>v==='done').length;if(cnt>=3)streak++;else if(i>0)break}
+  document.getElementById('m-streak').textContent=streak;
+}
+
+// ─── SKINCARE ────────────────────────────────────────────────
+function renderSkinSteps(){
+  const phase=D().phase||1;
+  ['am','pm'].forEach(type=>{
+    const steps=SKIN_STEPS[type]['phase'+phase];
+    const key='skin'+type.charAt(0).toUpperCase()+type.slice(1);
+    const doneMap=D()[key]||{};
+    const el=document.getElementById('skin-'+type+'-steps');
+    el.innerHTML=steps.map((s,i)=>`
+      <div class="skin-step">
+        <div class="step-num ${doneMap[i]?'done':''}" onclick="toggleStep('${type}',${i})">${doneMap[i]?'✓':i+1}</div>
+        <div class="step-info">
+          <div class="step-name">${s.name}</div>
+          <div class="step-product">${s.product}</div>
+          ${s.note?`<div class="step-note">${s.note}</div>`:''}
+        </div>
+      </div>`).join('');
+    const done=Object.values(doneMap).filter(Boolean).length;
+    document.getElementById('skin-'+type+'-count').textContent=done+'/'+steps.length+' trin gjort';
+    const pb=document.getElementById('phase-badge-'+type);
+    if(pb){pb.textContent=phase===1?'Fase 1 — Calm down':'Fase 2 — Glow up';pb.className='phase-badge '+(phase===1?'phase1':'phase2')}
+    if(type==='am'){
+      const minSkin=document.getElementById('min-skin');
+      // min-skin no longer in dashboard but keep for safety
+    }
+  });
+}
+function toggleStep(type,i){
+  const key='skin'+type.charAt(0).toUpperCase()+type.slice(1);
+  if(!D()[key])D()[key]={};D()[key][i]=!D()[key][i];saveState();renderSkinSteps();
+}
+function resetSkin(type){
+  const key='skin'+type.charAt(0).toUpperCase()+type.slice(1);D()[key]={};saveState();renderSkinSteps();
+}
+function setPhase(p){D().phase=p;saveState();renderSkinSteps();renderRetinolInteractive()}
+
+// ─── RETINOL INTERAKTIV ──────────────────────────────────────
+function renderRetinolInteractive(){
+  const el=document.getElementById('retinol-week-interactive');
+  const done=D().retinolDone||{};
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:.4rem">
+    ${RETINOL_LABELS.map((d,i)=>{
+      const isRetinolDay=RETINOL_DAYS_IDX.includes(i);
+      const isDone=done[i];
+      return`<div style="text-align:center;padding:.6rem .25rem;border-radius:8px;cursor:${isRetinolDay?'pointer':'default'};background:${isDone?'var(--pink)':isRetinolDay?'var(--pink-bg)':'var(--surface)'};border:1px solid ${isRetinolDay?'rgba(139,32,96,.2)':'var(--border)'};" onclick="${isRetinolDay?'toggleRetinol('+i+')':''}">
+        <div style="font-size:10px;color:${isDone?'rgba(255,255,255,.8)':isRetinolDay?'var(--pink)':'var(--hint)'};margin-bottom:3px">${d}</div>
+        <div style="font-size:13px;font-weight:500;color:${isDone?'#fff':isRetinolDay?'var(--pink)':'var(--hint)'}">${isDone?'✓':isRetinolDay?'Ret.':'–'}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function toggleRetinol(i){if(!D().retinolDone)D().retinolDone={};D().retinolDone[i]=!D().retinolDone[i];saveState();renderRetinolInteractive()}
+
+// ─── SKIN GROCERY ────────────────────────────────────────────
+function renderSkinGrocery(){
+  const el=document.getElementById('skin-grocery');
+  const doneMap=D().grocery_skin||{};
+  let lastCat='',html='';
+  SKIN_GROCERY.forEach((g,i)=>{
+    if(g.cat!==lastCat){html+=`<div style="font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.05em;padding:.5rem 0 .25rem;${lastCat?'border-top:1px solid var(--border);margin-top:.25rem':''}">${g.cat}</div>`;lastCat=g.cat}
+    html+=`<button class="grocery-item${doneMap[i]?' checked':''}" onclick="toggleSkinGrocery(${i},this)"><span class="gi-dot">${doneMap[i]?'●':'○'}</span>${g.name}</button>`;
+  });
+  el.innerHTML=html;
+}
+function toggleSkinGrocery(i,el){
+  if(!D().grocery_skin)D().grocery_skin={};D().grocery_skin[i]=!D().grocery_skin[i];
+  el.classList.toggle('checked',!!D().grocery_skin[i]);el.querySelector('.gi-dot').textContent=D().grocery_skin[i]?'●':'○';saveState();
+}
+
+// ─── FOOD GROCERY (ugentlig) ─────────────────────────────────
+function renderFoodGrocery(){
+  const el=document.getElementById('food-grocery');if(!el)return;
+  const wp=W();if(!wp.grocery_food_items)wp.grocery_food_items=FOOD_GROCERY.map(n=>({name:n,done:false}));
+  el.innerHTML=wp.grocery_food_items.map((g,i)=>`
+    <div class="grocery-row">
+      <button class="grocery-item${g.done?' checked':''}" onclick="toggleFoodGrocery(${i})">
+        <span class="gi-dot">${g.done?'●':'○'}</span>${escHtml(g.name)}
+      </button>
+      <button class="grocery-del" onclick="deleteFoodGrocery(${i})" title="Slet">✕</button>
+    </div>`).join('');
+}
+function toggleFoodGrocery(i){
+  const wp=W();wp.grocery_food_items[i].done=!wp.grocery_food_items[i].done;saveState();renderFoodGrocery();
+}
+function deleteFoodGrocery(i){
+  const wp=W();wp.grocery_food_items.splice(i,1);saveState();renderFoodGrocery();
+}
+function addGrocery(){
+  const name=prompt('Tilføj vare til indkøbslisten:');if(!name)return;
+  const wp=W();if(!wp.grocery_food_items)wp.grocery_food_items=FOOD_GROCERY.map(n=>({name:n,done:false}));
+  wp.grocery_food_items.push({name,done:false});saveState();renderFoodGrocery();
+}
+function clearCheckedGrocery(){
+  const wp=W();if(!wp.grocery_food_items)return;
+  wp.grocery_food_items=wp.grocery_food_items.filter(g=>!g.done);saveState();renderFoodGrocery();
+}
+
+// ─── MADPLAN ─────────────────────────────────────────────────
+function renderMadplan(){
+  const el=document.getElementById('madplan-grid');if(!el)return;
+  const wp=W(),isSunday=new Date().getDay()===0;
+  const sb=document.getElementById('sunday-badge'),sp=document.getElementById('sunday-prompt');
+  if(sb)sb.style.display=isSunday?'inline-flex':'none';
+  if(sp)sp.style.display=isSunday?'block':'none';
+  el.innerHTML=DAYS_DA.map(d=>`
+    <div class="madplan-day">
+      <div class="madplan-dayname">${d}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem">
+        ${['Morgenmad','Frokost','Aftensmad','Snack'].map(m=>`
+          <div>
+            <div class="madplan-label">${m}</div>
+            <input class="madplan-input" placeholder="—" value="${escHtml((wp.madplan[d]||{})[m]||'')}" onchange="saveMadplan('${d}','${m}',this.value)">
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function saveMadplan(day,meal,val){const wp=W();if(!wp.madplan[day])wp.madplan[day]={};wp.madplan[day][meal]=val;saveState()}
+
+// ─── MORGENMAD REDIGER ───────────────────────────────────────
+function restoreBreakfast(){
+  const b=W().breakfast;
+  if(!b)return;
+  document.getElementById('breakfast-name').textContent=b.name;
+  document.getElementById('breakfast-desc').textContent=b.desc;
+  document.getElementById('breakfast-kcal').textContent=b.kcal;
+  document.getElementById('breakfast-protein').textContent=b.protein;
+}
+function editBreakfast(){
+  const b=W().breakfast;
+  const name=prompt('Morgenmad navn:',b.name);if(name===null)return;
+  const desc=prompt('Beskrivelse:',b.desc);if(desc===null)return;
+  const kcal=prompt('Kalorier (fx ~450 kcal):',b.kcal);if(kcal===null)return;
+  const protein=prompt('Protein (fx ~35g protein):',b.protein);if(protein===null)return;
+  W().breakfast={name,desc,kcal,protein};saveState();restoreBreakfast();
+}
+
+// ─── TODOS ───────────────────────────────────────────────────
+function escHtml(s){return(s||'').replace(/"/g,'&quot;')}
+function renderTodos(){
+  ['today','week','general'].forEach(list=>{
+    const el=document.getElementById('todo-'+list);if(!el)return;
+    const items=D().todos[list]||[];
+    el.innerHTML=items.map((t,i)=>`
+      <div class="todo-item">
+        <button class="todo-cb ${t.done?'done':''}" onclick="toggleTodo('${list}',${i})">${t.done?'✓':''}</button>
+        <input class="todo-text ${t.done?'done-text':''}" value="${escHtml(t.text)}" onchange="editTodo('${list}',${i},this.value)" placeholder="${list==='today'?'Hvad skal du nå i dag?':list==='week'?'Ugeopgave...':'Huskeliste...'}">
+        <button class="todo-del" onclick="deleteTodo('${list}',${i})">✕</button>
+      </div>`).join('');
+  });
+}
+function addTodo(list){if(!D().todos[list])D().todos[list]=[];D().todos[list].push({text:'',done:false});saveState();renderTodos();setTimeout(()=>{const inputs=document.querySelectorAll('#todo-'+list+' .todo-text');if(inputs.length)inputs[inputs.length-1].focus()},50)}
+function toggleTodo(list,i){D().todos[list][i].done=!D().todos[list][i].done;saveState();renderTodos()}
+function editTodo(list,i,val){D().todos[list][i].text=val;saveState()}
+function deleteTodo(list,i){D().todos[list].splice(i,1);saveState();renderTodos()}
+
+// ─── UGENTLIG RESET ──────────────────────────────────────────
+function renderWeeklyReset(){
+  const el=document.getElementById('weekly-reset-list');if(!el)return;
+  const done=D().weeklyReset||{};
+  el.innerHTML=WEEKLY_RESET.map((item,i)=>`
+    <div class="habit-row">
+      <div class="habit-left"><div class="habit-name">${item}</div></div>
+      <button onclick="toggleWeeklyReset(${i},this)" class="pill ${done[i]?'pill-green':'pill-amber'}">${done[i]?'ja':'nej'}</button>
+    </div>`).join('');
+}
+function toggleWeeklyReset(i,btn){
+  if(!D().weeklyReset)D().weeklyReset={};
+  D().weeklyReset[i]=!D().weeklyReset[i];
+  btn.className='pill '+(D().weeklyReset[i]?'pill-green':'pill-amber');
+  btn.textContent=D().weeklyReset[i]?'ja':'nej';
+  saveState();
+}
+
+// ─── ØNSKELISTE ──────────────────────────────────────────────
+function renderWishes(){
+  ['toej','hjem','andet'].forEach(cat=>{
+    const el=document.getElementById('wish-list-'+cat);if(!el)return;
+    const items=W().wishes[cat]||[];
+    el.innerHTML=items.length===0?`<div style="font-size:13px;color:var(--hint);padding:.5rem 0">Ingen ønsker endnu — tilføj dit første.</div>`:
+      items.map((w,i)=>`
+        <div class="wish-item">
+          <div class="wish-emoji">${cat==='toej'?'👗':cat==='hjem'?'🏠':'✨'}</div>
+          <div class="wish-info">
+            <div class="wish-name">${escHtml(w.name)}</div>
+            ${w.note?`<div class="wish-note">${escHtml(w.note)}</div>`:''}
+            ${w.price?`<div class="wish-price">${escHtml(w.price)}</div>`:''}
+          </div>
+          <button class="wish-del" onclick="deleteWish('${cat}',${i})">✕</button>
+        </div>`).join('');
+  });
+}
+function addWish(cat){
+  const name=prompt('Hvad ønsker du?');if(!name)return;
+  const note=prompt('Beskrivelse / link (kan springes over):');
+  const price=prompt('Pris (kan springes over):');
+  if(!W().wishes[cat])W().wishes[cat]=[];
+  W().wishes[cat].push({name,note:note||'',price:price||''});saveState();renderWishes();
+}
+function deleteWish(cat,i){W().wishes[cat].splice(i,1);saveState();renderWishes()}
+
+// ─── MOOD ────────────────────────────────────────────────────
+function setMood(btn,emoji,color,text){
+  document.querySelectorAll('.mood-btn').forEach(b=>{b.classList.remove('active');b.style.background='';b.style.borderColor=''});
+  btn.classList.add('active');
+  const bgs={blue:'var(--blue-bg)',red:'var(--red-bg)',amber:'var(--amber-bg)',green:'var(--green-bg)',purple:'var(--purple-bg)'};
+  const borders={blue:'var(--blue)',red:'var(--red)',amber:'var(--amber)',green:'var(--green)',purple:'var(--purple)'};
+  btn.style.background=bgs[color];btn.style.borderColor=borders[color];
+  document.getElementById('mood-text').textContent=text;
+  D().mood=emoji;saveState();
+  document.getElementById('dash-mood').textContent=emoji;
+  document.getElementById('mood-checkin').classList.add('done');
+}
+function togglePill(btn){const on=btn.classList.contains('pill-green');btn.className='pill '+(on?'pill-amber':'pill-green');btn.textContent=on?(btn.textContent==='gjort'?'ugjort':'nej'):(btn.textContent==='ugjort'?'gjort':'ja')}
+function renderDopa(){const el=document.getElementById('dopa-grid');el.innerHTML=DOPAMINE.map((d,i)=>`<button class="dopa-item${D().dopa[i]?' used':''}" onclick="toggleDopa(${i},this)">${d}</button>`).join('')}
+function toggleDopa(i,el){D().dopa[i]=!D().dopa[i];el.classList.toggle('used',!!D().dopa[i]);saveState()}
+
+// ─── SLIDERS ─────────────────────────────────────────────────
+function restoreSliders(){
+  document.getElementById('anxiety-slider').value=D().anxiety||5;
+  document.getElementById('anxiety-val').textContent=D().anxiety||5;
+}
+function restoreNote(){
+  document.getElementById('daily-note').value=D().note||'';
+  document.getElementById('daily-note').oninput=function(){D().note=this.value;saveState()};
+}
+function updateAnxiety(v){document.getElementById('anxiety-val').textContent=v;D().anxiety=+v;saveState()}
+
+// ─── VÆGT MODAL ──────────────────────────────────────────────
+function openWeightInput(){
+  const m=document.getElementById('weight-modal');
+  m.style.display='flex';
+  const inp=document.getElementById('weight-input');
+  inp.value=D().weight||'';
+  setTimeout(()=>inp.focus(),100);
+}
+function closeWeightModal(){document.getElementById('weight-modal').style.display='none'}
+function saveWeight(){
+  const val=document.getElementById('weight-input').value.replace(',','.');
+  const n=parseFloat(val);
+  if(isNaN(n)){closeWeightModal();return}
+  D().weight=n;saveState();
+  document.getElementById('dash-weight').textContent=n+' kg';
+  document.getElementById('weight-checkin').classList.add('done');
+  closeWeightModal();renderWeightChart();
+}
+
+// ─── DAG MODAL ───────────────────────────────────────────────
+let _dayModalKey=null;
+function openDayModal(key,dayName){
+  _dayModalKey=key;
+  document.getElementById('day-modal-title').textContent=dayName;
+  renderDayModal();
+  document.getElementById('day-modal').style.display='flex';
+}
+function renderDayModal(){
+  const key=_dayModalKey;
+  if(!key)return;
+  const dayState=state[key]||{};
+  document.getElementById('day-weight-input').value=dayState.weight||'';
+  const all=[...HABITS.movement,...HABITS.food,...HABITS.mental];
+  const habits=dayState.habits||{};
+  document.getElementById('day-modal-habits').innerHTML=all.filter(h=>!h.inactive).map(h=>{
+    const done=habits[h.id]==='done';
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px;color:${done?'var(--green)':'var(--muted)'};font-weight:${done?'500':'400'}">${h.label}</span>
+      <button onclick="toggleDayHabit('${h.id}')" class="pill ${done?'pill-green':'pill-red'}" style="font-size:10px">${done?'gjort':'ikke gjort'}</button>
+    </div>`;
+  }).join('');
+  document.getElementById('day-modal-note').textContent=dayState.note||'Intet notat for denne dag.';
+}
+function toggleDayHabit(habitId){
+  if(!_dayModalKey)return;
+  if(!state[_dayModalKey])state[_dayModalKey]={habits:{}};
+  if(!state[_dayModalKey].habits)state[_dayModalKey].habits={};
+  const cur=state[_dayModalKey].habits[habitId];
+  state[_dayModalKey].habits[habitId]=cur==='done'?null:'done';
+  saveState();renderDayModal();renderWeekGrid();updateScore();updateDashboard();
+}
+function closeDayModal(){document.getElementById('day-modal').style.display='none';_dayModalKey=null}
+function saveDayWeight(){
+  if(!_dayModalKey)return;
+  const val=document.getElementById('day-weight-input').value.replace(',','.');
+  const n=parseFloat(val);
+  if(isNaN(n)||n<20||n>300){
+    document.getElementById('day-weight-input').style.borderColor='var(--red)';
+    return;
+  }
+  if(!state[_dayModalKey])state[_dayModalKey]={};
+  state[_dayModalKey].weight=n;
+  saveState();renderWeightChart();renderWeekGrid();
+  document.getElementById('day-weight-input').style.borderColor='var(--green)';
+  // vis bekræftelse
+  const btn=document.querySelector('[onclick="saveDayWeight()"]');
+  if(btn){const orig=btn.textContent;btn.textContent='✓';setTimeout(()=>{btn.textContent=orig;btn.style.background=''},1200)}
+}
+
+init();
+
+// Event listeners sat efter init så elementerne eksisterer
+document.getElementById('weight-input').addEventListener('keydown',e=>{if(e.key==='Enter')saveWeight()});
+document.getElementById('weight-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeWeightModal()});
+document.getElementById('day-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDayModal()});
+</script>
+</body>
+</html>
