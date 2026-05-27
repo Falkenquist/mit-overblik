@@ -271,19 +271,33 @@ textarea:focus{border-color:var(--border-strong)}
         </div>
       </div>
 
-      <!-- Ugeoverblik integreret -->
+      <!-- Vægtudvikling -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--green-bg);border-bottom:1px solid rgba(45,106,79,.15)">
+          <div style="padding:.85rem .5rem;text-align:center">
+            <div style="font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Startvægt</div>
+            <div id="wstat-start" style="font-size:1.15rem;font-weight:500;font-family:'DM Serif Display',serif">—</div>
+          </div>
+          <div style="padding:.85rem .5rem;text-align:center;border-left:1px solid rgba(45,106,79,.2);border-right:1px solid rgba(45,106,79,.2)">
+            <div style="font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Tabt i alt</div>
+            <div id="wstat-diff" style="font-size:1.35rem;font-weight:600;font-family:'DM Serif Display',serif;color:var(--green)">—</div>
+          </div>
+          <div style="padding:.85rem .5rem;text-align:center">
+            <div style="font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Nu</div>
+            <div id="wstat-now" style="font-size:1.15rem;font-weight:500;font-family:'DM Serif Display',serif">—</div>
+          </div>
+        </div>
+        <div style="padding:.85rem 1rem 1rem">
+          <canvas id="weight-canvas" height="180" style="width:100%;display:block;border-radius:6px;cursor:pointer;touch-action:pan-y"></canvas>
+          <div style="font-size:11px;color:var(--hint);text-align:center;margin-top:.5rem">Klik på et punkt — eller en tom dato — for at tilføje vægt</div>
+        </div>
+      </div>
+
+      <!-- Ugeoverblik -->
       <div class="card">
         <div class="card-title">Denne uge</div>
         <div class="week-grid" id="week-grid"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.75rem;margin-bottom:.4rem">
-          <div style="font-size:11px;color:var(--hint);letter-spacing:.04em;text-transform:uppercase">Vægtudvikling</div>
-          <div style="display:flex;align-items:center;gap:.4rem">
-            <button onclick="shiftWeightChart(-1)" style="border:none;background:var(--surface);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:13px;color:var(--muted);line-height:1">←</button>
-            <span id="weight-week-label" style="font-size:11px;color:var(--muted);min-width:80px;text-align:center">Denne uge</span>
-            <button id="weight-next-btn" onclick="shiftWeightChart(1)" style="border:none;background:var(--surface);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:13px;color:var(--muted);line-height:1;opacity:.3">→</button>
-          </div>
-        </div>
-        <canvas id="weight-canvas" height="100" style="width:100%;display:block;border-radius:6px;cursor:grab;touch-action:pan-y"></canvas>
+        <div style="font-size:11px;color:var(--hint);margin-top:.5rem">Klik på en dag for at tilføje eller rette data</div>
       </div>
 
       <!-- Minimumsmål -->
@@ -773,7 +787,6 @@ function weekKey(){
 
 let state=loadState();
 const TODAY=todayKey();
-let weightChartOffset=0;
 
 function D(){
   if(!state[TODAY])state[TODAY]={
@@ -849,25 +862,18 @@ async function init(){
   document.getElementById('weight-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeWeightModal()});
   document.getElementById('day-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDayModal()});
 
-  // Drag/swipe på vægt-kurven
+  // Klik på vægt-kurven åbner dag-modal for den valgte dato
   const wc=document.getElementById('weight-canvas');
   if(wc){
-    let dragX=null;
-    wc.addEventListener('mousedown',e=>{dragX=e.clientX;wc.style.cursor='grabbing'});
-    window.addEventListener('mouseup',e=>{
-      if(dragX===null)return;
-      const dx=e.clientX-dragX;
-      if(dx<-40)shiftWeightChart(-1);
-      else if(dx>40)shiftWeightChart(1);
-      dragX=null;wc.style.cursor='grab';
-    });
-    wc.addEventListener('touchstart',e=>{dragX=e.touches[0].clientX},{passive:true});
-    wc.addEventListener('touchend',e=>{
-      if(dragX===null)return;
-      const dx=e.changedTouches[0].clientX-dragX;
-      if(dx<-40)shiftWeightChart(-1);
-      else if(dx>40)shiftWeightChart(1);
-      dragX=null;
+    wc.addEventListener('click',e=>{
+      const days=wc._chartDays;
+      if(!days||days.length===0)return;
+      const rect=wc.getBoundingClientRect();
+      const x=e.clientX-rect.left;
+      const closest=days.reduce((best,d)=>Math.abs(d.cx-x)<Math.abs(best.cx-x)?d:best);
+      const date=new Date(closest.key+'T12:00:00');
+      const label=date.toLocaleDateString('da-DK',{weekday:'long',day:'numeric',month:'long'});
+      openDayModal(closest.key,label);
     });
   }
 }
@@ -948,104 +954,141 @@ function renderWeekGrid(){
 }
 
 // ─── WEIGHT CHART ────────────────────────────────────────────
-function shiftWeightChart(delta){
-  const next=weightChartOffset+delta;
-  if(next>0)return;
-  weightChartOffset=next;
-  renderWeightChart();
+function getAllWeightData(){
+  // Alle registrerede vægtpunkter på tværs af hele historikken
+  return Object.entries(state)
+    .filter(([k,v])=>/^\d{4}-\d{2}-\d{2}$/.test(k)&&v&&v.weight!=null)
+    .map(([k,v])=>({key:k,weight:v.weight}))
+    .sort((a,b)=>a.key.localeCompare(b.key));
 }
 
 function renderWeightChart(){
   const canvas=document.getElementById('weight-canvas');
   if(!canvas)return;
 
-  const label=document.getElementById('weight-week-label');
-  const nextBtn=document.getElementById('weight-next-btn');
-  if(label){
-    if(weightChartOffset===0)label.textContent='Denne uge';
-    else if(weightChartOffset===-1)label.textContent='Sidste uge';
-    else label.textContent=Math.abs(weightChartOffset)+' uger siden';
-  }
-  if(nextBtn)nextBtn.style.opacity=weightChartOffset===0?'.3':'1';
-
-  const ctx=canvas.getContext('2d');
   const dpr=window.devicePixelRatio||1;
-  const W=canvas.offsetWidth||300,H=100;
+  const W=canvas.offsetWidth||300,H=180;
   canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
   canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
   ctx.scale(dpr,dpr);
 
+  // Saml alle dage fra første registrering til i dag
+  const allW=getAllWeightData();
+  const todayKey=TODAY;
+
+  // Opdater stats
+  const s=document.getElementById('wstat-start'),n=document.getElementById('wstat-now'),df=document.getElementById('wstat-diff');
+  if(allW.length>0&&s){
+    const first=allW[0].weight,last=allW[allW.length-1].weight;
+    const diff=+(first-last).toFixed(1);
+    s.textContent=first+' kg';n.textContent=last+' kg';
+    if(diff>0){df.textContent='↓ '+diff+' kg';df.style.color='var(--green)'}
+    else if(diff<0){df.textContent='↑ '+Math.abs(diff)+' kg';df.style.color='var(--red)'}
+    else{df.textContent='0 kg';df.style.color='var(--muted)'}
+  }
+
+  // Byg 28-dages vindue: fra 27 dage siden til i dag, ALLE dage har en x-position
   const now=new Date();
-  const todayDow=(now.getDay()+6)%7;
-  const weekMon=new Date(now);
-  weekMon.setDate(now.getDate()-todayDow+(weightChartOffset*7));
+  const days=[];
+  for(let i=27;i>=0;i--){
+    const d=new Date(now);d.setDate(now.getDate()-i);
+    const key=d.toISOString().slice(0,10);
+    days.push({key,weight:(state[key]||{}).weight??null,isToday:i===0,
+      label:d.toLocaleDateString('da-DK',{day:'numeric',month:'short'}).replace('.','')});
+  }
 
-  const isCurrentWeek=weightChartOffset===0;
-  const pts=DAYS_DA.map((d,i)=>{
-    const date=new Date(weekMon);date.setDate(weekMon.getDate()+i);
-    if(isCurrentWeek&&i>todayDow)return null;
-    return(state[date.toISOString().slice(0,10)]||{}).weight||null;
-  });
+  // Gem dag-positioner til click-handler
+  canvas._chartDays=days;
 
-  const vals=pts.filter(Boolean);
-  if(vals.length<2){
+  const withData=days.filter(d=>d.weight!=null);
+  if(withData.length<1){
     ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='#B0AEA6';ctx.font='500 11px "DM Sans",sans-serif';ctx.textAlign='center';
-    ctx.fillText('Ingen vægtdata denne uge',W/2,H/2);
+    ctx.fillStyle='#B0AEA6';ctx.font='500 12px "DM Sans",sans-serif';ctx.textAlign='center';
+    ctx.fillText('Klik på "Vægt i dag" for at begynde',W/2,H/2);
     return;
   }
 
-  const pad=16,bottom=22;
-  const mn=Math.min(...vals)-0.5,mx=Math.max(...vals)+0.5;
-  const xOf=i=>pad+(i/6)*(W-pad*2);
-  const yOf=v=>H-bottom-((v-mn)/(mx-mn))*(H-bottom-10);
+  const pL=10,pR=10,pT=26,pB=28;
+  const cW=W-pL-pR,cH=H-pT-pB;
+  const n28=days.length-1; // 27
+  const xOf=i=>pL+(i/n28)*cW;
+  const allVals=days.filter(d=>d.weight!=null).map(d=>d.weight);
+  const mn=Math.min(...allVals)-0.8,mx=Math.max(...allVals)+0.8;
+  const yOf=v=>pT+cH-((v-mn)/(mx-mn))*cH;
+
+  // Gem x-positioner
+  canvas._chartDays=days.map((d,i)=>({...d,cx:xOf(i)}));
+
   ctx.clearRect(0,0,W,H);
 
-  // Dagsnavne i bunden
-  ctx.fillStyle='#B0AEA6';ctx.font='500 9px "DM Sans",sans-serif';ctx.textAlign='center';
-  DAYS_DA.forEach((d,i)=>ctx.fillText(d,xOf(i),H-6));
+  // Subtile vandrette gridlinjer
+  const range=mx-mn,step=range>5?2:range>2?1:0.5;
+  let gv=Math.ceil(mn/step)*step;
+  ctx.lineWidth=1;
+  while(gv<=mx){
+    const gy=yOf(gv);
+    ctx.strokeStyle='rgba(0,0,0,.05)';
+    ctx.beginPath();ctx.moveTo(pL,gy);ctx.lineTo(W-pR,gy);ctx.stroke();
+    ctx.fillStyle='#C8C5BC';ctx.font='500 9px "DM Sans",sans-serif';ctx.textAlign='left';
+    ctx.fillText(gv.toFixed(1),pL+2,gy-3);
+    gv=+(gv+step).toFixed(1);
+  }
+
+  // Datumsmærker på x-aksen — vis ca. hver 7. dag
+  ctx.fillStyle='#B8B5AC';ctx.font='500 9px "DM Sans",sans-serif';ctx.textAlign='center';
+  days.forEach((d,i)=>{
+    if(i%7===0||d.isToday)ctx.fillText(d.label,xOf(i),H-6);
+  });
 
   // Udfyldning under kurven
-  const visIdx=pts.map((v,i)=>v!=null?i:-1).filter(i=>i>=0);
-  const grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'rgba(45,106,79,.15)');grad.addColorStop(1,'rgba(45,106,79,0)');
+  const grad=ctx.createLinearGradient(0,pT,0,H-pB);
+  grad.addColorStop(0,'rgba(45,106,79,.18)');grad.addColorStop(1,'rgba(45,106,79,0)');
+  const vis=days.map((d,i)=>d.weight!=null?i:-1).filter(i=>i>=0);
   ctx.beginPath();
-  visIdx.forEach((i,n)=>{
-    const x=xOf(i),y=yOf(pts[i]);
+  vis.forEach((idx,n)=>{
+    const x=xOf(idx),y=yOf(days[idx].weight);
     if(n===0){ctx.moveTo(x,y);return}
-    const pi=visIdx[n-1],px=xOf(pi),py=yOf(pts[pi]);
+    const pi=vis[n-1],px=xOf(pi),py=yOf(days[pi].weight);
     ctx.bezierCurveTo((px+x)/2,py,(px+x)/2,y,x,y);
   });
-  ctx.lineTo(xOf(visIdx[visIdx.length-1]),H-bottom);
-  ctx.lineTo(xOf(visIdx[0]),H-bottom);
-  ctx.closePath();
+  ctx.lineTo(xOf(vis[vis.length-1]),H-pB);ctx.lineTo(xOf(vis[0]),H-pB);ctx.closePath();
   ctx.fillStyle=grad;ctx.fill();
 
-  // Selve kurven — smooth med bezier
+  // Kurvelinje
   ctx.beginPath();
-  visIdx.forEach((i,n)=>{
-    const x=xOf(i),y=yOf(pts[i]);
+  vis.forEach((idx,n)=>{
+    const x=xOf(idx),y=yOf(days[idx].weight);
     if(n===0){ctx.moveTo(x,y);return}
-    const pi=visIdx[n-1],px=xOf(pi),py=yOf(pts[pi]);
+    const pi=vis[n-1],px=xOf(pi),py=yOf(days[pi].weight);
     ctx.bezierCurveTo((px+x)/2,py,(px+x)/2,y,x,y);
   });
-  ctx.strokeStyle='#2D6A4F';ctx.lineWidth=2;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+  ctx.strokeStyle='#2D6A4F';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
 
-  // Punkter og labels
-  pts.forEach((v,i)=>{
-    if(v==null)return;
-    const x=xOf(i),y=yOf(v),isToday=isCurrentWeek&&i===todayDow;
-    const lbl=v+'';
-    ctx.font=`${isToday?'600':'500'} 10px "DM Sans",sans-serif`;
-    const tw=ctx.measureText(lbl+'kg').width;
-    ctx.fillStyle='rgba(255,255,255,.88)';
-    ctx.beginPath();ctx.roundRect(x-tw/2-3,y-24,tw+6,14,3);ctx.fill();
-    ctx.fillStyle=isToday?'#2D6A4F':'#7A7870';
-    ctx.textAlign='center';ctx.fillText(lbl+'kg',x,y-13);
-    ctx.beginPath();ctx.arc(x,y,isToday?5:3.5,0,Math.PI*2);
+  // Punkter + labels
+  days.forEach((d,i)=>{
+    if(d.weight==null)return;
+    const x=xOf(i),y=yOf(d.weight),isToday=d.isToday;
+    const showLabel=isToday||i===vis[0]||i===vis[vis.length-1]||withData.length<=10;
+    if(showLabel){
+      const lbl=d.weight+'';
+      ctx.font=`${isToday?'600':'500'} 10px "DM Sans",sans-serif`;
+      const tw=ctx.measureText(lbl+'kg').width;
+      ctx.fillStyle='rgba(255,255,255,.92)';
+      ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-tw/2-3,y-22,tw+6,13,3);else ctx.rect(x-tw/2-3,y-22,tw+6,13);ctx.fill();
+      ctx.fillStyle=isToday?'#2D6A4F':'#7A7870';ctx.textAlign='center';ctx.fillText(lbl+'kg',x,y-12);
+    }
+    ctx.beginPath();ctx.arc(x,y,isToday?5.5:(withData.length>14?3:4),0,Math.PI*2);
     ctx.fillStyle=isToday?'#2D6A4F':'#fff';ctx.fill();
     ctx.strokeStyle='#2D6A4F';ctx.lineWidth=isToday?0:1.5;ctx.stroke();
   });
+
+  // Dagens position — vis tom cirkel hvis ingen data endnu
+  if(!days[27].weight){
+    const x=xOf(27),y=pT+cH/2;
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.strokeStyle='rgba(45,106,79,.3)';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);
+  }
 }
 
 const QUOTES=[
