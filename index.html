@@ -283,12 +283,7 @@ textarea:focus{border-color:var(--border-strong)}
             <button id="weight-next-btn" onclick="shiftWeightChart(1)" style="border:none;background:var(--surface);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:13px;color:var(--muted);line-height:1;opacity:.3">→</button>
           </div>
         </div>
-        <canvas id="weight-canvas" height="70" style="width:100%;display:block;cursor:grab;touch-action:pan-y"></canvas>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
-          <span class="pill pill-green" style="cursor:default">✓ God dag</span>
-          <span class="pill pill-amber" style="cursor:default">~ OK dag</span>
-          <span class="pill pill-red" style="cursor:default">↓ Hård dag</span>
-        </div>
+        <canvas id="weight-canvas" height="100" style="width:100%;display:block;border-radius:6px;cursor:grab;touch-action:pan-y"></canvas>
       </div>
 
       <!-- Minimumsmål -->
@@ -782,7 +777,7 @@ let weightChartOffset=0;
 
 function D(){
   if(!state[TODAY])state[TODAY]={
-    habits:{},protein:0,note:'',mood:null,anxiety:5,weight:null,
+    habits:{},protein:0,note:'',mood:null,anxiety:5,weight:null,daytype:null,
     skinAm:{},skinPm:{},retinolDone:{},grocery_skin:{},dopa:{},
     todos:{today:[],week:[],general:[]},
     weeklyReset:{},workoutDone:{}
@@ -883,7 +878,7 @@ function renderAll(){
   renderWeekGrid();renderWeightChart();
   renderMealPlan();renderTraenplan();renderShoppingList();renderTodos();renderWeeklyReset();renderWishes();
   restoreSliders();restoreNote();
-  restoreMinimums();updateScore();updateStreak();updateDashboard();
+  restoreMinimums();updateScore();updateStreak();updateDashboard();restoreDaytype();
 }
 
 function setDate(){
@@ -902,7 +897,20 @@ function nav(name,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('page-'+name).classList.add('active');
 }
-function setMode(m,btn){document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function setMode(m,btn){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  D().daytype=m;
+  saveState();renderWeekGrid();
+}
+function restoreDaytype(){
+  const dt=D().daytype;
+  if(!dt)return;
+  const map={god:'.m-god',ok:'.m-ok',daarlig:'.m-daarlig'};
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.querySelector(map[dt]);
+  if(btn)btn.classList.add('active');
+}
 function skinTab(name,btn){
   document.querySelectorAll('.tab-pill').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('#page-skincare .tab-content').forEach(t=>t.classList.remove('active'));
@@ -922,15 +930,19 @@ function renderWeekGrid(){
     const date=new Date(now);date.setDate(date.getDate()-(todayDow-i));
     const key=date.toISOString().slice(0,10),isToday=i===todayDow;
     let cls='';
+    const dayData=state[key]||{};
     if(isToday)cls='today';
-    else if(state[key]){const cnt=Object.values(state[key].habits||{}).filter(v=>v==='done').length;if(cnt>=7)cls='good';else if(cnt>=3)cls='ok';else if(cnt>0)cls='tough'}
+    else if(dayData){const cnt=Object.values(dayData.habits||{}).filter(v=>v==='done').length;if(cnt>=7)cls='good';else if(cnt>=3)cls='ok';else if(cnt>0)cls='tough'}
     const sym=isToday?'●':cls==='good'?'✓':cls==='ok'?'~':cls==='tough'?'↓':'–';
     const col=isToday?'var(--blue)':cls==='good'?'var(--green)':cls==='ok'?'var(--amber)':cls==='tough'?'var(--red)':'var(--hint)';
-    const weight=(state[key]||{}).weight;
+    const weight=dayData.weight;
+    const dt=dayData.daytype;
+    const dtBadge=dt?`<div style="font-size:9px;margin-top:2px;color:${dt==='god'?'var(--green)':dt==='ok'?'var(--amber)':'var(--red)'}">${dt==='god'?'◉ god':dt==='ok'?'◎ ok':'○ hård'}</div>`:'';
     return`<div class="day-cell ${cls}" onclick="openDayModal('${key}','${d}')" style="cursor:pointer">
       <div class="day-name">${d}</div>
       <div class="day-score" style="color:${col}">${sym}</div>
       ${weight?`<div style="font-size:9px;color:var(--hint);margin-top:2px">${weight}kg</div>`:''}
+      ${dtBadge}
     </div>`;
   }).join('');
 }
@@ -947,7 +959,6 @@ function renderWeightChart(){
   const canvas=document.getElementById('weight-canvas');
   if(!canvas)return;
 
-  // Opdater label og knapper
   const label=document.getElementById('weight-week-label');
   const nextBtn=document.getElementById('weight-next-btn');
   if(label){
@@ -958,8 +969,11 @@ function renderWeightChart(){
   if(nextBtn)nextBtn.style.opacity=weightChartOffset===0?'.3':'1';
 
   const ctx=canvas.getContext('2d');
-  const W=canvas.offsetWidth||300,H=70;
-  canvas.width=W;canvas.height=H;
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth||300,H=100;
+  canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+  canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
 
   const now=new Date();
   const todayDow=(now.getDay()+6)%7;
@@ -976,31 +990,61 @@ function renderWeightChart(){
   const vals=pts.filter(Boolean);
   if(vals.length<2){
     ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='#B0AEA6';ctx.font='11px Montserrat,sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#B0AEA6';ctx.font='500 11px "DM Sans",sans-serif';ctx.textAlign='center';
     ctx.fillText('Ingen vægtdata denne uge',W/2,H/2);
     return;
   }
-  const mn=Math.min(...vals)-.5,mx=Math.max(...vals)+.5;
-  const xStep=W/6;
-  const yOf=v=>H-4-((v-mn)/(mx-mn))*(H-14);
+
+  const pad=16,bottom=22;
+  const mn=Math.min(...vals)-0.5,mx=Math.max(...vals)+0.5;
+  const xOf=i=>pad+(i/6)*(W-pad*2);
+  const yOf=v=>H-bottom-((v-mn)/(mx-mn))*(H-bottom-10);
   ctx.clearRect(0,0,W,H);
+
+  // Dagsnavne i bunden
+  ctx.fillStyle='#B0AEA6';ctx.font='500 9px "DM Sans",sans-serif';ctx.textAlign='center';
+  DAYS_DA.forEach((d,i)=>ctx.fillText(d,xOf(i),H-6));
+
+  // Udfyldning under kurven
+  const visIdx=pts.map((v,i)=>v!=null?i:-1).filter(i=>i>=0);
   const grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'rgba(45,106,79,.18)');grad.addColorStop(1,'rgba(45,106,79,0)');
-  ctx.beginPath();let first=true;
-  pts.forEach((v,i)=>{if(v==null)return;const x=i*xStep,y=yOf(v);if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y)});
-  ctx.lineTo((pts.length-1)*xStep,H);ctx.lineTo(0,H);ctx.closePath();
+  grad.addColorStop(0,'rgba(45,106,79,.15)');grad.addColorStop(1,'rgba(45,106,79,0)');
+  ctx.beginPath();
+  visIdx.forEach((i,n)=>{
+    const x=xOf(i),y=yOf(pts[i]);
+    if(n===0){ctx.moveTo(x,y);return}
+    const pi=visIdx[n-1],px=xOf(pi),py=yOf(pts[pi]);
+    ctx.bezierCurveTo((px+x)/2,py,(px+x)/2,y,x,y);
+  });
+  ctx.lineTo(xOf(visIdx[visIdx.length-1]),H-bottom);
+  ctx.lineTo(xOf(visIdx[0]),H-bottom);
+  ctx.closePath();
   ctx.fillStyle=grad;ctx.fill();
-  ctx.beginPath();first=true;
-  pts.forEach((v,i)=>{if(v==null)return;const x=i*xStep,y=yOf(v);if(first){ctx.moveTo(x,y);first=false}else ctx.lineTo(x,y)});
-  ctx.strokeStyle='#2D6A4F';ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
+
+  // Selve kurven — smooth med bezier
+  ctx.beginPath();
+  visIdx.forEach((i,n)=>{
+    const x=xOf(i),y=yOf(pts[i]);
+    if(n===0){ctx.moveTo(x,y);return}
+    const pi=visIdx[n-1],px=xOf(pi),py=yOf(pts[pi]);
+    ctx.bezierCurveTo((px+x)/2,py,(px+x)/2,y,x,y);
+  });
+  ctx.strokeStyle='#2D6A4F';ctx.lineWidth=2;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke();
+
+  // Punkter og labels
   pts.forEach((v,i)=>{
     if(v==null)return;
-    const x=i*xStep,y=yOf(v),isToday=isCurrentWeek&&i===todayDow;
-    ctx.beginPath();ctx.arc(x,y,isToday?4:3,0,Math.PI*2);
-    ctx.fillStyle=isToday?'#2D6A4F':'#FFFFFF';ctx.fill();
-    ctx.strokeStyle='#2D6A4F';ctx.lineWidth=1.5;ctx.stroke();
-    ctx.fillStyle='#7A7870';ctx.font='9px Montserrat,sans-serif';ctx.textAlign='center';
-    ctx.fillText(v+'kg',x,y-7);
+    const x=xOf(i),y=yOf(v),isToday=isCurrentWeek&&i===todayDow;
+    const lbl=v+'';
+    ctx.font=`${isToday?'600':'500'} 10px "DM Sans",sans-serif`;
+    const tw=ctx.measureText(lbl+'kg').width;
+    ctx.fillStyle='rgba(255,255,255,.88)';
+    ctx.beginPath();ctx.roundRect(x-tw/2-3,y-24,tw+6,14,3);ctx.fill();
+    ctx.fillStyle=isToday?'#2D6A4F':'#7A7870';
+    ctx.textAlign='center';ctx.fillText(lbl+'kg',x,y-13);
+    ctx.beginPath();ctx.arc(x,y,isToday?5:3.5,0,Math.PI*2);
+    ctx.fillStyle=isToday?'#2D6A4F':'#fff';ctx.fill();
+    ctx.strokeStyle='#2D6A4F';ctx.lineWidth=isToday?0:1.5;ctx.stroke();
   });
 }
 
