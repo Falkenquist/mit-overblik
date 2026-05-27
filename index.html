@@ -271,8 +271,9 @@ textarea:focus{border-color:var(--border-strong)}
         </div>
       </div>
 
-      <!-- Vægtudvikling -->
+      <!-- Ugeoverblik & Vægt -->
       <div class="card" style="padding:0;overflow:hidden">
+        <!-- Stats -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--green-bg);border-bottom:1px solid rgba(45,106,79,.15)">
           <div style="padding:.85rem .5rem;text-align:center">
             <div style="font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">Startvægt</div>
@@ -287,17 +288,17 @@ textarea:focus{border-color:var(--border-strong)}
             <div id="wstat-now" style="font-size:1.15rem;font-weight:500;font-family:'DM Serif Display',serif">—</div>
           </div>
         </div>
-        <div style="padding:.85rem 1rem 1rem">
-          <canvas id="weight-canvas" height="180" style="width:100%;display:block;border-radius:6px;cursor:pointer;touch-action:pan-y"></canvas>
-          <div style="font-size:11px;color:var(--hint);text-align:center;margin-top:.5rem">Klik på et punkt — eller en tom dato — for at tilføje vægt</div>
+        <!-- Ugegrid -->
+        <div style="padding:.85rem 1rem .5rem">
+          <div style="font-size:11px;color:var(--hint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.6rem">Denne uge</div>
+          <div class="week-grid" id="week-grid"></div>
         </div>
-      </div>
-
-      <!-- Ugeoverblik -->
-      <div class="card">
-        <div class="card-title">Denne uge</div>
-        <div class="week-grid" id="week-grid"></div>
-        <div style="font-size:11px;color:var(--hint);margin-top:.5rem">Klik på en dag for at tilføje eller rette data</div>
+        <!-- Kurve -->
+        <div style="padding:.25rem 1rem 1rem">
+          <div style="font-size:11px;color:var(--hint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">Vægtudvikling</div>
+          <canvas id="weight-canvas" height="180" style="width:100%;display:block;border-radius:6px;cursor:pointer;touch-action:pan-y"></canvas>
+          <div style="font-size:11px;color:var(--hint);text-align:center;margin-top:.5rem">Klik på kurven eller en dag for at tilføje eller rette vægt</div>
+        </div>
       </div>
 
       <!-- Minimumsmål -->
@@ -941,13 +942,11 @@ function renderWeekGrid(){
     else if(dayData){const cnt=Object.values(dayData.habits||{}).filter(v=>v==='done').length;if(cnt>=7)cls='good';else if(cnt>=3)cls='ok';else if(cnt>0)cls='tough'}
     const sym=isToday?'●':cls==='good'?'✓':cls==='ok'?'~':cls==='tough'?'↓':'–';
     const col=isToday?'var(--blue)':cls==='good'?'var(--green)':cls==='ok'?'var(--amber)':cls==='tough'?'var(--red)':'var(--hint)';
-    const weight=dayData.weight;
     const dt=dayData.daytype;
     const dtBadge=dt?`<div style="font-size:9px;margin-top:2px;color:${dt==='god'?'var(--green)':dt==='ok'?'var(--amber)':'var(--red)'}">${dt==='god'?'◉ god':dt==='ok'?'◎ ok':'○ hård'}</div>`:'';
     return`<div class="day-cell ${cls}" onclick="openDayModal('${key}','${d}')" style="cursor:pointer">
       <div class="day-name">${d}</div>
       <div class="day-score" style="color:${col}">${sym}</div>
-      ${weight?`<div style="font-size:9px;color:var(--hint);margin-top:2px">${weight}kg</div>`:''}
       ${dtBadge}
     </div>`;
   }).join('');
